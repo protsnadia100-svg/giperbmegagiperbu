@@ -1,318 +1,232 @@
+/* quiz.js
+    - Logic for the quiz page
+    - Handles question generation, answer checking, and scoring
+*/
 document.addEventListener('DOMContentLoaded', () => {
+    // DOM Elements
+    const introOverlay = document.getElementById('intro-overlay');
+    const quizMain = document.getElementById('quiz-main');
+    const resultsOverlay = document.getElementById('results-overlay');
     
-    // --- 1. ЛОГІКА ПЕРЕМИКАННЯ ВКЛАДОК ---
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-    const equationPreviews = {
-        'ellipse': `\\( \\frac{(x-h)^2}{a^2} + \\frac{(y-k)^2}{b^2} = 1 \\)`,
-        'hyperbola': `\\( \\frac{(x-h)^2}{a^2} - \\frac{(y-k)^2}{b^2} = 1 \\)`,
-        'parabola': `\\( (y-k)^2 = 4p(x-h) \\)`
-    };
+    const equationDisplay = document.getElementById('equation-display');
+    const answerButtonsContainer = document.getElementById('answer-buttons');
+    const answerButtons = answerButtonsContainer.querySelectorAll('.btn');
+    const feedbackDisplay = document.getElementById('feedback-display');
+    const nextQuestionBtn = document.getElementById('next-question-btn');
+    const scoreDisplay = document.getElementById('score-display');
+    
+    // Results screen elements
+    const finalScoreDisplay = document.getElementById('final-score');
+    const playAgainBtn = document.getElementById('play-again-btn');
 
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const type = button.dataset.type;
+    // Question bank
+    const questions = [
+        { equation: `x^2/9 + y^2/4 = 1`, answer: 'ellipse' },
+        { equation: `x^2 - y^2 = 4`, answer: 'hyperbola' },
+        { equation: `y^2 = 16x`, answer: 'parabola' },
+        { equation: `x^2 + y^2 = 25`, answer: 'ellipse' },
+        { equation: `y^2/9 - x^2/16 = 1`, answer: 'hyperbola' },
+        { equation: `x = -2y^2 + 3y - 5`, answer: 'parabola' },
+        { equation: `2x^2 + 5y^2 - 10 = 0`, answer: 'ellipse' },
+        { equation: `3x^2 - 4y^2 - 12 = 0`, answer: 'hyperbola' },
+        { equation: `4x^2 - 8x + y + 5 = 0`, answer: 'parabola' },
+        { equation: `(x-1)^2 + (y+2)^2 = 9`, answer: 'ellipse' },
+        { equation: `xy = 4`, answer: 'hyperbola' },
+        { equation: `y = x^2`, answer: 'parabola' },
+    ];
+    const TOTAL_QUESTIONS = questions.length;
 
-            // Оновлюємо кнопки
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let answered = false;
 
-            // Оновлюємо контент (форми)
-            tabContents.forEach(content => {
-                content.classList.toggle('active', content.id === `${type}-form`);
+    // --- Lottery Logic ---
+    const lotteryNumbersContainer = document.getElementById('lottery-numbers');
+    const selectedNumberDisplay = document.getElementById('selected-number-display');
+    const winningNumberEl = document.getElementById('winning-number');
+    
+    // ОНОВЛЕНО: Налаштування лотереї
+    const totalNumbers = 34; // Всього 34 номери
+    // ОНОВЛЕНО: Ваш новий список "вимкнених" номерів
+    const disabledNumbers = [2, 3, 4, 8, 12, 18, 21, 26, 27]; 
+
+    for (let i = 1; i <= totalNumbers; i++) {
+        const numberEl = document.createElement('div');
+        numberEl.classList.add('lottery-number');
+        numberEl.textContent = i;
+        
+        // Додаємо клас, якщо номер "вимкнений"
+        if (disabledNumbers.includes(i)) {
+            numberEl.classList.add('disabled');
+        }
+        
+        lotteryNumbersContainer.appendChild(numberEl);
+    }
+    
+    function runLottery() {
+        // Отримуємо всі номери та тільки "увімкнені"
+        const allNumbers = Array.from(lotteryNumbersContainer.children);
+        const enabledNumbers = allNumbers.filter(n => !n.classList.contains('disabled'));
+        
+        const shuffleInterval = setInterval(() => {
+            // Вибираємо випадковий номер тільки з "увімкнених"
+            const randomIndex = Math.floor(Math.random() * enabledNumbers.length);
+            allNumbers.forEach(n => n.classList.remove('active'));
+            enabledNumbers[randomIndex].classList.add('active');
+        }, 100);
+
+        setTimeout(() => {
+            clearInterval(shuffleInterval);
+            
+            // Вибираємо переможця тільки з "увімкнених"
+            const winningIndex = Math.floor(Math.random() * enabledNumbers.length);
+            const winningElement = enabledNumbers[winningIndex];
+            const winningNumber = parseInt(winningElement.textContent);
+
+            allNumbers.forEach(n => {
+                n.classList.remove('active');
+                if (parseInt(n.textContent) === winningNumber) {
+                    n.classList.add('winner');
+                }
             });
+            
+            lotteryNumbersContainer.style.opacity = '0.5';
+            winningNumberEl.textContent = winningNumber;
+            selectedNumberDisplay.classList.remove('hidden');
 
-            // Оновлюємо прев'ю рівняння залежно від орієнтації
-            if (type === 'hyperbola') {
-                const orientationSelect = document.getElementById('hyperbola-orientation');
-                updateHyperbolaPreview(orientationSelect.value);
-            } else if (type === 'parabola') {
-                const orientationSelect = document.getElementById('parabola-orientation');
-                updateParabolaPreview(orientationSelect.value);
-            }
+            setTimeout(startQuiz, 2000);
+        }, 3000);
+    }
+
+    // --- Main Quiz Logic ---
+    function startQuiz() {
+        introOverlay.classList.add('hidden');
+        quizMain.classList.remove('hidden');
+        resultsOverlay.classList.add('hidden');
+        
+        currentQuestionIndex = 0;
+        score = 0;
+        answered = false;
+        displayQuestion();
+    }
+
+    function displayQuestion() {
+        answered = false;
+        const question = questions[currentQuestionIndex];
+        
+        equationDisplay.textContent = `\\( ${question.equation} \\)`;
+        if (window.MathJax) {
+            MathJax.typesetPromise([equationDisplay]).catch(err => console.error(err));
+        }
+        
+        feedbackDisplay.textContent = '';
+        feedbackDisplay.className = 'feedback';
+        nextQuestionBtn.classList.add('hidden');
+        answerButtons.forEach(btn => {
+            btn.className = 'btn';
+            btn.disabled = false;
         });
-    });
+        
+        scoreDisplay.textContent = `Рахунок: ${score} / ${currentQuestionIndex} | Запитання: ${currentQuestionIndex + 1} / ${TOTAL_QUESTIONS}`;
+    }
 
-    // Оновлення прев'ю для гіперболи
-    const hypOrientation = document.getElementById('hyperbola-orientation');
-    if (hypOrientation) hypOrientation.addEventListener('change', (e) => updateHyperbolaPreview(e.target.value));
-    
-    function updateHyperbolaPreview(orientation) {
-        const previewEl = document.querySelector('#hyperbola-form .equation-preview');
-        if (!previewEl) return;
-        if (orientation === 'vertical') {
-            previewEl.textContent = `\\( \\frac{(y-k)^2}{a^2} - \\frac{(x-h)^2}{b^2} = 1 \\)`;
+    function handleAnswerClick(e) {
+        if (answered || !e.target.matches('[data-answer]')) {
+            return;
+        }
+        answered = true;
+
+        const selectedAnswer = e.target.dataset.answer;
+        const correctAnswer = questions[currentQuestionIndex].answer;
+
+        answerButtons.forEach(btn => btn.disabled = true);
+        
+        if (selectedAnswer === correctAnswer) {
+            score++;
+            e.target.classList.add('correct');
+            feedbackDisplay.textContent = 'Правильно!';
+            feedbackDisplay.classList.add('correct');
         } else {
-            previewEl.textContent = `\\( \\frac{(x-h)^2}{a^2} - \\frac{(y-k)^2}{b^2} = 1 \\)`;
+            e.target.classList.add('incorrect');
+            const correctType = correctAnswer.charAt(0).toUpperCase() + correctAnswer.slice(1);
+            feedbackDisplay.innerHTML = `Неправильно! Це <strong>${correctType}</strong>.`;
+            feedbackDisplay.classList.add('incorrect');
+            
+            const correctButton = answerButtonsContainer.querySelector(`[data-answer="${correctAnswer}"]`);
+            correctButton.classList.add('correct');
         }
-        if (window.MathJax) MathJax.typesetPromise([previewEl]);
+        
+        scoreDisplay.textContent = `Рахунок: ${score} / ${currentQuestionIndex + 1} | Запитання: ${currentQuestionIndex + 1} / ${TOTAL_QUESTIONS}`;
+        
+        if (currentQuestionIndex < TOTAL_QUESTIONS - 1) {
+            nextQuestionBtn.textContent = 'Наступне питання →';
+        } else {
+            nextQuestionBtn.textContent = 'Завершити вікторину';
+        }
+        nextQuestionBtn.classList.remove('hidden');
     }
 
-    // Оновлення прев'ю для параболи
-    const parOrientation = document.getElementById('parabola-orientation');
-    if (parOrientation) parOrientation.addEventListener('change', (e) => updateParabolaPreview(e.target.value));
-
-    function updateParabolaPreview(orientation) {
-        const previewEl = document.querySelector('#parabola-form .equation-preview');
-        if (!previewEl) return;
-        let eq = '';
-        switch(orientation) {
-            case 'horizontal-left': eq = `(y-k)^2 = -4p(x-h)`; break;
-            case 'vertical-up':     eq = `(x-h)^2 = 4p(y-k)`; break;
-            case 'vertical-down':   eq = `(x-h)^2 = -4p(y-k)`; break;
-            default:                eq = `(y-k)^2 = 4p(x-h)`;
+    function handleNextQuestion() {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < TOTAL_QUESTIONS) {
+            displayQuestion();
+        } else {
+            showResults();
         }
-        previewEl.textContent = `\\( ${eq} \\)`;
-        if (window.MathJax) MathJax.typesetPromise([previewEl]);
     }
+    
+    function showResults() {
+        quizMain.classList.add('hidden');
+        resultsOverlay.classList.remove('hidden');
+        finalScoreDisplay.textContent = `${score} / ${TOTAL_QUESTIONS}`;
 
+        const checkmark = resultsOverlay.querySelector('.checkmark');
+        const dislikeContainer = document.getElementById('dislike-container');
+        dislikeContainer.innerHTML = ''; 
 
-    // --- 2. ЛОГІКА КНОПКИ "ПОБУДУВАТИ" (ВИПРАВЛЕНА) ---
-    const buildBtn = document.getElementById('buildBtnCanonical');
-    if (buildBtn) {
-        buildBtn.addEventListener('click', () => {
-            const activeTab = document.querySelector('.tab-btn.active').dataset.type;
-            
-            // Створюємо порожній об'єкт для коефіцієнтів загального рівняння
-            let parsed = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 };
-            
-            try {
-                // Збираємо параметри з активної форми
-                const params = {};
-                const inputs = document.querySelectorAll(`#${activeTab}-form input, #${activeTab}-form select`);
-                inputs.forEach(input => {
-                    const key = input.id.split('-').pop();
-                    // Переконуємось, що значення полів не порожні перед парсингом
-                    const val = input.value;
-                    if (val === '') throw new Error(`Параметр '${input.id}' не може бути порожнім.`);
-                    params[key] = (input.type === 'number') ? parseFloat(val) : val;
-                    if (input.type === 'number' && isNaN(params[key])) {
-                         throw new Error(`Некоректне числове значення для '${input.id}'.`);
-                    }
-                });
-
-                // Генеруємо об'єкт {A, B, C, D, E, F} НАПРЯМУ, минаючи парсинг
-                
-                if (activeTab === 'ellipse') {
-                    if (!params.a || !params.b || params.a <= 0 || params.b <= 0) throw new Error("'a' та 'b' мають бути додатніми числами");
-                    const a2 = params.a**2;
-                    const b2 = params.b**2;
-                    // Рівняння: b^2*(x-h)^2 + a^2*(y-k)^2 = a^2*b^2
-                    // b^2*(x^2 - 2hx + h^2) + a^2*(y^2 - 2ky + k^2) - a^2*b^2 = 0
-                    // (b^2)x^2 + (a^2)y^2 + (-2*h*b^2)x + (-2*k*a^2)y + (h^2*b^2 + k^2*a^2 - a^2*b^2) = 0
-                    parsed.A = b2;
-                    parsed.C = a2;
-                    parsed.D = -2 * params.h * b2;
-                    parsed.E = -2 * params.k * a2;
-                    parsed.F = (params.h**2 * b2) + (params.k**2 * a2) - (a2 * b2);
-                
-                } else if (activeTab === 'hyperbola') {
-                    if (!params.a || !params.b || params.a <= 0 || params.b <= 0) throw new Error("'a' та 'b' мають бути додатніми числами");
-                    const a2 = params.a**2;
-                    const b2 = params.b**2;
-                    
-                    if (params.orientation === 'vertical') {
-                        // Рівняння: (y-k)^2/a^2 - (x-h)^2/b^2 = 1
-                        // b^2*(y-k)^2 - a^2*(x-h)^2 = a^2*b^2
-                        // b^2*(y^2 - 2ky + k^2) - a^2*(x^2 - 2hx + h^2) - a^2*b^2 = 0
-                        // (-a^2)x^2 + (b^2)y^2 + (2*h*a^2)x + (-2*k*b^2)y + (k^2*b^2 - h^2*a^2 - a^2*b^2) = 0
-                        parsed.A = -a2;
-                        parsed.C = b2;
-                        parsed.D = 2 * params.h * a2;
-                        parsed.E = -2 * params.k * b2;
-                        parsed.F = (params.k**2 * b2) - (params.h**2 * a2) - (a2 * b2);
-                    } else { // 'horizontal'
-                        // Рівняння: (x-h)^2/a^2 - (y-k)^2/b^2 = 1
-                        // b^2*(x-h)^2 - a^2*(y-k)^2 = a^2*b^2
-                        // b^2*(x^2 - 2hx + h^2) - a^2*(y^2 - 2ky + k^2) - a^2*b^2 = 0
-                        // (b^2)x^2 + (-a^2)y^2 + (-2*h*b^2)x + (2*k*a^2)y + (h^2*b^2 - k^2*a^2 - a^2*b^2) = 0
-                        parsed.A = b2;
-                        parsed.C = -a2;
-                        parsed.D = -2 * params.h * b2;
-                        parsed.E = 2 * params.k * a2;
-                        parsed.F = (params.h**2 * b2) - (params.k**2 * a2) - (a2 * b2);
-                    }
-                
-                } else if (activeTab === 'parabola') {
-                    if (!params.p || params.p === 0) throw new Error("'p' має бути ненульовим числом");
-                    let p4 = 4 * params.p;
-                    
-                    if (params.orientation === 'horizontal-right') {
-                        // (y-k)^2 = 4p(x-h)
-                        // (y^2 - 2ky + k^2) - 4px + 4ph = 0
-                        // (1)y^2 + (-4p)x + (-2k)y + (k^2 + 4ph) = 0
-                        parsed.C = 1;
-                        parsed.D = -p4;
-                        parsed.E = -2 * params.k;
-                        parsed.F = (params.k**2) + (p4 * params.h);
-                    } else if (params.orientation === 'horizontal-left') {
-                        // (y-k)^2 = -4p(x-h)
-                        p4 = -p4; // p4 стає від'ємним
-                        // (y^2 - 2ky + k^2) + 4px - 4ph = 0
-                        // (1)y^2 + (4p)x + (-2k)y + (k^2 - 4ph) = 0
-                        parsed.C = 1;
-                        parsed.D = -p4; // -(-4p) = 4p
-                        parsed.E = -2 * params.k;
-                        parsed.F = (params.k**2) + (p4 * params.h); // p4 від'ємне
-                    } else if (params.orientation === 'vertical-up') {
-                        // (x-h)^2 = 4p(y-k)
-                        // (x^2 - 2hx + h^2) - 4py + 4pk = 0
-                        // (1)x^2 + (-2h)x + (-4p)y + (h^2 + 4pk) = 0
-                        parsed.A = 1;
-                        parsed.D = -2 * params.h;
-                        parsed.E = -p4;
-                        parsed.F = (params.h**2) + (p4 * params.k);
-                    } else { // 'vertical-down'
-                        // (x-h)^2 = -4p(y-k)
-                        p4 = -p4; // p4 стає від'ємним
-                        // (x^2 - 2hx + h^2) + 4py - 4pk = 0
-                        // (1)x^2 + (-2h)x + (4p)y + (h^2 - 4pk) = 0
-                        parsed.A = 1;
-                        parsed.D = -2 * params.h;
-                        parsed.E = -p4; // -(-4p) = 4p
-                        parsed.F = (params.h**2) + (p4 * params.k); // p4 від'ємне
-                    }
-                }
-
-                // Тепер використовуємо існуючі функції з solver.js та graph.js
-                // Перевіряємо, чи вони завантажені
-                if (typeof Solver.analyzeGeneral === 'function' && 
-                    typeof plotAnalysis === 'function' && // Ця функція в graph.js
-                    typeof displayAnalysis === 'function') // Ця функція в graph.js
-                {
-                    
-                    // Ми більше НЕ викликаємо Solver.parseGeneralEquation(equationString)
-                    // Ми одразу аналізуємо наш готовий об'єкт 'parsed'
-                    
-                    const analysis = Solver.analyzeGeneral(parsed);
-                    window.lastAnalysis = analysis; // Зберігаємо для інших кнопок
-
-                    // 1. Аналізуємо (для інфо-панелі)
-                    displayAnalysis(analysis); // Використовуємо функцію з graph.js
-                    document.getElementById('stepsOutput').innerHTML = Solver.getSteps(parsed, analysis);
-                    
-                    // 2. Будуємо графік
-                    plotAnalysis(analysis); // Використовуємо функцію з graph.js
-
-                } else {
-                    // Ця помилка спрацює, якщо solver.js або graph.js не завантажились
-                    throw new Error("Необхідні функції (Solver/plotAnalysis/displayAnalysis) не завантажено. Перевірте шляхи до файлів.");
-                }
-
-            } catch (error) {
-                console.error('Помилка при побудові канонічної кривої:', error);
-                // Повідомляємо користувача про помилку, наприклад, про незаповнені поля
-                document.getElementById('solveOutput').innerHTML = `<span style="color: #ff6b6b;">Помилка: ${error.message}</span>`;
+        if (score >= TOTAL_QUESTIONS / 2) {
+            resultsOverlay.className = 'quiz-overlay correct-final';
+            checkmark.textContent = '✓';
+            if (window.confetti) {
+                confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 } });
             }
+        } else {
+            resultsOverlay.className = 'quiz-overlay incorrect-final';
+            checkmark.textContent = '✗';
+            for (let i = 0; i < 30; i++) {
+                createDislike();
+            }
+        }
+    }
+
+    function createDislike() {
+        const dislike = document.createElement('div');
+        dislike.classList.add('dislike');
+        dislike.textContent = '👎';
+        dislike.style.left = `${Math.random() * 100}%`;
+        dislike.style.animationDuration = `${Math.random() * 3 + 2}s`;
+        document.getElementById('dislike-container').appendChild(dislike);
+    }
+    
+    // Event Listeners
+    answerButtonsContainer.addEventListener('click', handleAnswerClick);
+    nextQuestionBtn.addEventListener('click', handleNextQuestion);
+    playAgainBtn.addEventListener('click', () => location.reload()); 
+
+    // Start
+    runLottery();
+
+    // Ensure theme is applied from localStorage
+    // This is a simple theme handler that might be in a separate file in a real project
+    const theme = localStorage.getItem('conics_theme') || 'dark';
+    document.body.classList.toggle('theme-light', theme === 'light');
+    const themeToggle = document.getElementById('themeToggle');
+    if (themeToggle) {
+        themeToggle.checked = theme === 'light';
+        themeToggle.addEventListener('change', () => {
+            const newTheme = themeToggle.checked ? 'light' : 'dark';
+            document.body.classList.toggle('theme-light', newTheme === 'light');
+            localStorage.setItem('conics_theme', newTheme);
         });
     }
-
-
-    // --- 3. ЛОГІКА ДЛЯ СОНІФІКАЦІЇ ГІПЕРБОЛИ ---
-    
-    // Знаходимо елементи
-    const playBtn = document.getElementById('playHyperbolaSound');
-    const aInput = document.getElementById('hyperbola-a');
-    const bInput = document.getElementById('hyperbola-b');
-
-    // Перевіряємо, чи ми на правильній сторінці
-    if (!playBtn || !aInput || !bInput) {
-        // Якщо кнопки немає, просто виходимо (це не сторінка canonical.html)
-        return;
-    }
-
-    // Іконки для кнопки
-    const playIconHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;"><path d="M8 5v14l11-7z"/></svg> Почути асимптоту (за $a$ і $b$)`;
-    const stopIconHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;"><path d="M6 6h12v12H6z"/></svg> Зупинити`;
-
-    // Глобальні змінні для керування аудіо
-    let audioCtx;
-    let oscillator;
-    let gainNode;
-    let isPlaying = false;
-    let stopTimer; // Таймер для автоматичної зупинки
-
-    // Налаштування звуку
-    const DURATION = 4;        // 4 секунди
-    const MIN_FREQ = 50;       // Басова нота (Гц)
-    const FREQ_SCALE = 300;    // Множник висоти тону
-    const U_RANGE_SCALE = 20;  // Як "далеко" ми йдемо по осі X
-    const CURVE_POINTS = 100;  // Плавність звуку
-
-    function playHyperbolaSonification() {
-        if (isPlaying) {
-            stopSonification();
-            return;
-        }
-
-        // 1. Отримуємо значення A і B з полів вводу
-        let a = parseFloat(aInput.value);
-        let b = parseFloat(bInput.value);
-
-        // Перевірка на нульові або некоректні значення
-        if (!a || a <= 0 || !b || b <= 0) {
-            alert("Будь ласка, введіть додатні значення для 'a' та 'b', щоб почути звук.");
-            return;
-        }
-        
-        isPlaying = true;
-        playBtn.innerHTML = stopIconHTML;
-
-        // 2. Створюємо аудіо-контекст та вузли
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        oscillator = audioCtx.createOscillator();
-        gainNode = audioCtx.createGain();
-        oscillator.type = 'sine';
-
-        // 3. Генеруємо масив звуку
-        // Ми озвучуємо різницю між гіперболою та її асимптотою
-        const waveArray = new Float32Array(CURVE_POINTS);
-        for (let i = 0; i < CURVE_POINTS; i++) {
-            const t_norm = i / (CURVE_POINTS - 1); // Час від 0 до 1
-            
-            // $u = x/a$. Ми рухаємось від вершини (u=1) вдалину
-            // $a$ контролює, як *швидко* падає тон
-            const u = 1 + (t_norm * U_RANGE_SCALE) / a;
-            
-            // $y_diff = b * (u - sqrt(u*u - 1))$
-            // Це і є "відстань" до асимптоти. Вона прямує до 0.
-            const y_diff = b * (u - Math.sqrt(u * u - 1));
-            
-            // $b$ контролює початкову висоту тону
-            waveArray[i] = MIN_FREQ + (y_diff * FREQ_SCALE);
-        }
-
-        // 4. Запускаємо звук
-        const now = audioCtx.currentTime;
-        oscillator.frequency.setValueCurveAtTime(waveArray, now, DURATION);
-
-        // Плавний початок і кінець
-        gainNode.gain.setValueAtTime(0, now);
-        gainNode.gain.linearRampToValueAtTime(0.4, now + 0.1); // <-- Виправлена одруківка
-        gainNode.gain.setValueAtTime(0.4, now + DURATION - 0.2);
-        gainNode.gain.linearRampToValueAtTime(0, now + DURATION);
-
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        oscillator.start(now);
-
-        // 5. Плануємо зупинку
-        oscillator.stop(now + DURATION);
-        stopTimer = setTimeout(stopSonification, DURATION * 1000);
-    }
-
-    function stopSonification() {
-        if (oscillator) oscillator.stop();
-        if (audioCtx) audioCtx.close().catch(console.error);
-        if (stopTimer) clearTimeout(stopTimer);
-        
-        isPlaying = false;
-        audioCtx = null;
-        oscillator = null;
-        gainNode = null;
-        playBtn.innerHTML = playIconHTML;
-    }
-
-    // Прив'язуємо функцію до кнопки
-    playBtn.addEventListener('click', playHyperbolaSonification);
 });
