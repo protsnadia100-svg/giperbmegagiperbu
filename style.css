@@ -789,4 +789,28 @@ body.theme-light .lottery-number.disabled {
 body.theme-light .coeff-group input {
   border-color: rgba(0, 0, 0, 0.15);
   background: rgba(0, 0, 0, 0.02);
+
+}
+
+/* --- СТИЛІ ДЛЯ РОЗДІЛЕННЯ ГРУП КНОПОК --- */
+
+.card-panel .controls-row {
+  margin-bottom: 12px; /* Додаємо відступ знизу до кожної групи */
+  padding-bottom: 12px; /* Додаємо внутрішній відступ знизу */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* Додаємо тонку лінію-роздільник */
+}
+
+/* Прибираємо лінію та відступ у останньої групи кнопок */
+.card-panel .controls-row:last-of-type {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+body.theme-light .card-panel .controls-row {
+  border-bottom-color: rgba(0, 0, 0, 0.08); /* Колір лінії для світлої теми */
+}
+
+body.theme-light .card-panel .controls-row:last-of-type {
+  border-bottom: none;
 }
