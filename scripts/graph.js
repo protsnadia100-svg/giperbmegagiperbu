@@ -32,6 +32,7 @@ function initUI(){
     if ($('buildBtn')) $('buildBtn').addEventListener('click', analyzeAndPlot);
     if ($('analyzeBtn')) $('analyzeBtn').addEventListener('click', analyzeOnly);
     if ($('saveExampleBtn')) $('saveExampleBtn').addEventListener('click', () => {
+        syncEquationInput(); // Синхронізуємо перед збереженням
         const txt = eqInput.value.trim();
         if (txt) { 
             Solver.addExample(txt); 
@@ -47,6 +48,7 @@ function initUI(){
             $('stepsOutput').classList.add('hidden');
         }
         if (eqInput) eqInput.value = '';
+        syncCoeffBoxes(); // Очищуємо поля A, B, C...
         localStorage.removeItem('conics_last_equation');
         window.lastAnalysis = null;
     });
@@ -77,7 +79,13 @@ function initUI(){
         $('closeModalBtn').addEventListener('click', closeLibraryModal);
         $('libraryModal').addEventListener('click', (e) => { if(e.target === $('libraryModal')) closeLibraryModal(); });
     }
-    if (eqInput) eqInput.addEventListener('keydown', e => { if (e.key === 'Enter') analyzeAndPlot(); });
+    
+    // --- НОВА ЛОГІКА: Синхронізація полів A, B, C... з `equationInput` ---
+    const coeffInputs = document.querySelectorAll('.coeff-input');
+    coeffInputs.forEach(input => {
+        input.addEventListener('input', syncEquationInput);
+    });
+    // --- КІНЕЦЬ НОВОЇ ЛОГІКИ ---
     
     // Ініціалізація теми
     const savedTheme = localStorage.getItem('conics_theme') || 'dark';
@@ -104,6 +112,46 @@ function initUI(){
     loadEquationFromURLOrStorage();
     setupGraphEventListeners();
 }
+
+// --- НОВА ФУНКЦІЯ: Оновлює приховане поле `equationInput` ---
+function syncEquationInput() {
+    const A = parseFloat($('coeff-A').value) || 0;
+    const B = parseFloat($('coeff-B').value) || 0;
+    const C = parseFloat($('coeff-C').value) || 0;
+    const D = parseFloat($('coeff-D').value) || 0;
+    const E = parseFloat($('coeff-E').value) || 0;
+    const F = parseFloat($('coeff-F').value) || 0;
+
+    let eq = '';
+    if (A !== 0) eq += `${A}x^2 `;
+    if (B !== 0) eq += (B > 0) ? `+ ${B}xy ` : `- ${Math.abs(B)}xy `;
+    if (C !== 0) eq += (C > 0) ? `+ ${C}y^2 ` : `- ${Math.abs(C)}y^2 `;
+    if (D !== 0) eq += (D > 0) ? `+ ${D}x ` : `- ${Math.abs(D)}x `;
+    if (E !== 0) eq += (E > 0) ? `+ ${E}y ` : `- ${Math.abs(E)}y `;
+    if (F !== 0) eq += (F > 0) ? `+ ${F} ` : `- ${Math.abs(F)} `;
+    if (eq.length > 0) eq += '= 0';
+    
+    $('equationInput').value = eq.trim().replace(/^(\+)\s*/, ''); // Видаляємо початковий +
+}
+
+// --- НОВА ФУНКЦІЯ: Оновлює поля A, B, C... з `equationInput` ---
+function syncCoeffBoxes() {
+    const eq = $('equationInput').value;
+    const parsed = Solver.parseGeneralEquation(eq);
+    
+    if (parsed) {
+        $('coeff-A').value = parsed.A || '';
+        $('coeff-B').value = parsed.B || '';
+        $('coeff-C').value = parsed.C || '';
+        $('coeff-D').value = parsed.D || '';
+        $('coeff-E').value = parsed.E || '';
+        $('coeff-F').value = parsed.F || '';
+    } else {
+        // Очищуємо, якщо парсинг не вдався
+        ['A', 'B', 'C', 'D', 'E', 'F'].forEach(c => $(`coeff-${c}`).value = '');
+    }
+}
+
 
 // --- ЛОГІКА КЕРУВАННЯ ІНТЕРАКТИВНИМИ РЕЖИМАМИ ---
 
@@ -283,15 +331,23 @@ function handleGraphClick(data) {
 // --- ОСНОВНІ ФУНКЦІЇ АНАЛІЗУ ТА ПОБУДОВИ ---
 
 async function analyzeAndPlot() {
-    // ДОДАНО: Зупинка анімації перед новою побудовою
     if(window.isLocusAnimationActive) {
         deactivateAllModes();
     }
+    
+    // ОНОВЛЕНО: Синхронізуємо `equationInput` з полів A, B, C...
+    syncEquationInput();
+    
     const raw = $('equationInput').value.trim();
     if (!raw) return;
     localStorage.setItem('conics_last_equation', raw);
+    
     const parsed = Solver.parseGeneralEquation(raw);
     if (!parsed) { alert('Не вдалося розібрати рівняння.'); return; }
+    
+    // ОНОВЛЕНО: Синхронізуємо поля A, B, C... назад (для випадків з дробами)
+    syncCoeffBoxes(); 
+    
     const analysis = Solver.analyzeGeneral(parsed);
     window.lastAnalysis = analysis;
     displayAnalysis(analysis);
@@ -300,13 +356,24 @@ async function analyzeAndPlot() {
 }
 
 function analyzeOnly() {
+    // ОНОВЛЕНО: Синхронізуємо `equationInput` з полів A, B, C...
+    syncEquationInput();
+    
     const raw = $('equationInput').value.trim();
     if (!raw) return;
     localStorage.setItem('conics_last_equation', raw);
-    const analysis = Solver.analyzeGeneral(Solver.parseGeneralEquation(raw));
+
+    const parsed = Solver.parseGeneralEquation(raw);
+    if (!parsed) { alert('Не вдалося розібрати рівняння.'); return; }
+    
+    // ОНОВЛЕНО: Синхронізуємо поля A, B, C... назад
+    syncCoeffBoxes();
+
+    const analysis = Solver.analyzeGeneral(parsed);
     window.lastAnalysis = analysis;
     displayAnalysis(analysis);
 }
+
 
 async function plotAnalysis(analysis) {
     if (window.is3DViewActive) deactivateAllModes();
@@ -529,17 +596,24 @@ function loadEquationFromURLOrStorage() {
     const eqFromUrl = urlParams.get('eq');
     if (eqFromUrl) {
         eqInput.value = decodeURIComponent(eqFromUrl);
-        analyzeAndPlot();
     } else {
         const lastEq = localStorage.getItem('conics_last_equation');
         if (lastEq) {
             eqInput.value = lastEq;
-            analyzeAndPlot();
         }
+    }
+    
+    // ОНОВЛЕНО: Синхронізуємо поля A, B, C... при завантаженні
+    syncCoeffBoxes();
+    
+    if (eqInput.value) {
+        analyzeAndPlot();
     }
 }
 
 function shareEquation() {
+    // ОНОВЛЕНО: Синхронізуємо `equationInput` перед тим, як ділитися
+    syncEquationInput();
     const eq = $('equationInput').value.trim();
     if (!eq) { alert("Введіть рівняння, щоб поділитися ним."); return; }
     const encodedEq = encodeURIComponent(eq);
@@ -573,6 +647,7 @@ function renderExampleList() {
         btn.dataset.index = index;
         btn.onclick = () => {
             eqInput.value = eq;
+            syncCoeffBoxes(); // ОНОВЛЕНО: Синхронізуємо поля A, B, C...
             analyzeAndPlot();
         };
         node.appendChild(btn);
@@ -596,6 +671,7 @@ function openLibraryModal() {
             btn.innerHTML = `<strong>${item.name}:</strong><br>${item.eq}`;
             btn.onclick = () => {
                 eqInput.value = item.eq;
+                syncCoeffBoxes(); // ОНОВЛЕНО: Синхронізуємо поля A, B, C...
                 closeLibraryModal();
                 analyzeAndPlot();
             };

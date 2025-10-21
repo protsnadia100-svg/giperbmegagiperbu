@@ -38,21 +38,52 @@
   <main class="layout">
     <aside class="left-panel">
       <div class="card card-panel">
-        <label class="label">Рівняння (загального виду )</label>
-        <input id="equationInput" placeholder="Напр.: 5x^2 - 6xy + 5y^2 - 32 = 0" spellcheck="false" />
+        <label class="label">Рівняння: $$Ax^2 + Bxy + Cy^2 + Dx + Ey + F = 0$$</label>
+        
+        <div class="coeff-grid-3">
+          <div class="coeff-group">
+            <label for="coeff-A">A (x²)</label>
+            <input id="coeff-A" class="coeff-input" type="number" placeholder="A">
+          </div>
+          <div class="coeff-group">
+            <label for="coeff-B">B (xy)</label>
+            <input id="coeff-B" class="coeff-input" type="number" placeholder="B">
+          </div>
+          <div class="coeff-group">
+            <label for="coeff-C">C (y²)</label>
+            <input id="coeff-C" class="coeff-input" type="number" placeholder="C">
+          </div>
+          <div class="coeff-group">
+            <label for="coeff-D">D (x)</label>
+            <input id="coeff-D" class="coeff-input" type="number" placeholder="D">
+          </div>
+          <div class="coeff-group">
+            <label for="coeff-E">E (y)</label>
+            <input id="coeff-E" class="coeff-input" type="number" placeholder="E">
+          </div>
+          <div class="coeff-group">
+            <label for="coeff-F">F (стала)</label>
+            <input id="coeff-F" class="coeff-input" type="number" placeholder="F">
+          </div>
+        </div>
+
+        <input id="equationInput" type="text" style="display: none;">
 
         <div class="controls-row">
           <button id="buildBtn" class="btn primary">Побудувати</button>
-          <button id="analyzeBtn" class="btn">Аналіз</button>
-          <button id="libraryBtn" class="btn subtle">Бібліотека рівнянь</button>
+          <button id="libraryBtn" class="btn">Бібліотека</button>
+          <button id="analyzeBtn" class="btn subtle">Тільки аналіз</button>
+        </div>
+        
+        <div class="controls-row">
+          <button id="clearBtn" class="btn subtle">Очистити</button>
+          <button id="saveExampleBtn" class="btn subtle">Зберегти</button>
+          <button id="shareBtn" class="btn subtle">Поділитися</button>
         </div>
 
         <div class="controls-row">
-          <button id="saveExampleBtn" class="btn subtle">Зберегти</button>
-          <button id="clearBtn" class="btn subtle">Очистити</button>
-          <button id="toggleExtrasBtn" class="btn subtle">Осі</button>
-          <button id="toggleConjugateBtn" class="btn subtle">Спряжена</button>
-          <button id="shareBtn" class="btn subtle">Поділитися</button>
+          <button id="toggleExtrasBtn" class="btn subtle">Показати Осі/Фокуси</button>
+          <button id="toggleConjugateBtn" class="btn subtle">Показати Спряжену</button>
         </div>
         
         <div class="controls-row creative-features">

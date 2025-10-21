@@ -742,3 +742,51 @@ body.theme-light .lottery-number.disabled {
   color: #adb5bd;
   opacity: 0.7;
 }
+
+/* ... (всі ваші існуючі стилі) ... */
+
+/* --- НОВІ СТИЛІ: Сітка коефіцієнтів для index.html --- */
+.coeff-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 15px 0;
+}
+
+.coeff-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.coeff-group label {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 5px;
+  font-family: "Roboto Mono", monospace;
+}
+
+.coeff-group input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  text-align: center;
+}
+
+/* Приховуємо стрілки в полях типу number */
+.coeff-group input[type=number]::-webkit-inner-spin-button,
+.coeff-group input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.coeff-group input[type=number] {
+  -moz-appearance: textfield;
+}
+
+body.theme-light .coeff-group input {
+  border-color: rgba(0, 0, 0, 0.15);
+  background: rgba(0, 0, 0, 0.02);
+}
