@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ConicLab — Побудова кривих другого порядку</title>
+  <title>Побудова кривих другого порядку</title>
 
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
@@ -69,45 +69,35 @@
 
         <input id="equationInput" type="text" style="display: none;">
 
-        <div>
-          <h4 class="controls-group-title">Основні Дії</h4>
-          <div class="controls-row">
-            <button id="buildBtn" class="btn primary">Побудувати</button>
-            <button id="libraryBtn" class="btn">Бібліотека</button>
-            <button id="analyzeBtn" class="btn subtle">Тільки аналіз</button>
-          </div>
+        <div class="controls-row">
+          <button id="buildBtn" class="btn primary">Побудувати</button>
+          <button id="libraryBtn" class="btn">Бібліотека</button>
+          <button id="analyzeBtn" class="btn subtle">Тільки аналіз</button>
         </div>
         
-        <div>
-          <h4 class="controls-group-title">Рівняння</h4>
-          <div class="controls-row">
-            <button id="saveExampleBtn" class="btn subtle">Зберегти</button>
-            <button id="shareBtn" class="btn subtle">Поділитися</button>
-            <button id="clearBtn" class="btn subtle">Очистити</button>
-          </div>
+        <div class="controls-row">
+          <button id="saveExampleBtn" class="btn subtle">Зберегти</button>
+          <button id="shareBtn" class="btn subtle">Поділитися</button>
+          <button id="clearBtn" class="btn subtle">Очистити</button>
         </div>
 
-        <div>
-          <h4 class="controls-group-title">Вигляд Графіка</h4>
-          <div class="controls-row">
-            <button id="toggleExtrasBtn" class="btn subtle">Осі/Фокуси</button>
-            <button id="toggleConjugateBtn" class="btn subtle">Спряжена</button>
-          </div>
+        <div class="controls-row">
+          <button id="toggleExtrasBtn" class="btn subtle">Осі/Фокуси</button>
+          <button id="toggleConjugateBtn" class="btn subtle">Спряжена</button>
         </div>
         
-        <div>
-          <h4 class="controls-group-title">Інтерактивні Режими</h4>
-          <div class="controls-row creative-features">
-               <button id="exploreChordsBtn" class="btn creative">Хорди</button>
-               <button id="tangentModeBtn" class="btn creative">Дотична</button>
-               <button id="toggle3DBtn" class="btn creative">3D</button>
-               <button id="locusAnimationBtn" class="btn creative">Анімація</button>
-          </div>
+        <div class="controls-row creative-features">
+             <button id="exploreChordsBtn" class="btn creative">Хорди</button>
+             <button id="tangentModeBtn" class="btn creative">Дотична</button>
+             <button id="toggle3DBtn" class="btn creative">3D</button>
+             <button id="locusAnimationBtn" class="btn creative">Анімація</button>
         </div>
-        
+
         <div id="exampleList" class="example-list"></div>
         <div id="trashCan" class="trash-can">🗑️</div>
-      </div> <div class="card info-panel">
+      </div>
+
+      <div class="card info-panel">
         <h3>Результат</h3>
         <div id="solveOutput" class="result">Тут з'явиться тип кривої й короткий аналіз.</div>
         
