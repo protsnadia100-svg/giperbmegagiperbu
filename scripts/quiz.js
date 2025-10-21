@@ -44,32 +44,52 @@ document.addEventListener('DOMContentLoaded', () => {
     const lotteryNumbersContainer = document.getElementById('lottery-numbers');
     const selectedNumberDisplay = document.getElementById('selected-number-display');
     const winningNumberEl = document.getElementById('winning-number');
-    const totalNumbers = 24;
+    
+    // ОНОВЛЕНО: Налаштування лотереї
+    const totalNumbers = 34; // Всього 34 номери
+    // ОНОВЛЕНО: Ваш новий список "вимкнених" номерів
+    const disabledNumbers = [2, 3, 4, 8, 12, 18, 21, 26, 27]; 
 
     for (let i = 1; i <= totalNumbers; i++) {
         const numberEl = document.createElement('div');
         numberEl.classList.add('lottery-number');
         numberEl.textContent = i;
+        
+        // Додаємо клас, якщо номер "вимкнений"
+        if (disabledNumbers.includes(i)) {
+            numberEl.classList.add('disabled');
+        }
+        
         lotteryNumbersContainer.appendChild(numberEl);
     }
     
     function runLottery() {
-        const numbers = Array.from(lotteryNumbersContainer.children);
+        // Отримуємо всі номери та тільки "увімкнені"
+        const allNumbers = Array.from(lotteryNumbersContainer.children);
+        const enabledNumbers = allNumbers.filter(n => !n.classList.contains('disabled'));
+        
         const shuffleInterval = setInterval(() => {
-            const randomIndex = Math.floor(Math.random() * numbers.length);
-            numbers.forEach(n => n.classList.remove('active'));
-            numbers[randomIndex].classList.add('active');
+            // Вибираємо випадковий номер тільки з "увімкнених"
+            const randomIndex = Math.floor(Math.random() * enabledNumbers.length);
+            allNumbers.forEach(n => n.classList.remove('active'));
+            enabledNumbers[randomIndex].classList.add('active');
         }, 100);
 
         setTimeout(() => {
             clearInterval(shuffleInterval);
-            const winningNumber = Math.floor(Math.random() * totalNumbers) + 1;
-            numbers.forEach(n => {
+            
+            // Вибираємо переможця тільки з "увімкнених"
+            const winningIndex = Math.floor(Math.random() * enabledNumbers.length);
+            const winningElement = enabledNumbers[winningIndex];
+            const winningNumber = parseInt(winningElement.textContent);
+
+            allNumbers.forEach(n => {
                 n.classList.remove('active');
                 if (parseInt(n.textContent) === winningNumber) {
                     n.classList.add('winner');
                 }
             });
+            
             lotteryNumbersContainer.style.opacity = '0.5';
             winningNumberEl.textContent = winningNumber;
             selectedNumberDisplay.classList.remove('hidden');
