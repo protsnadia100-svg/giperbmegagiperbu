@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // --- 2. ЛОГІКА КНОПКИ "ПОБУДУВАТИ" (ВИПРАВЛЕНА) ---
+    // --- 2. ЛОГІКА КНОПКИ "ПОБУДУВАТИ" (НОВА, ВИПРАВЛЕНА) ---
     const buildBtn = document.getElementById('buildBtnCanonical');
     if (buildBtn) {
         buildBtn.addEventListener('click', () => {
@@ -78,37 +78,79 @@ document.addEventListener('DOMContentLoaded', () => {
                     params[key] = (input.type === 'number') ? parseFloat(input.value) : input.value;
                 });
 
-                // Генеруємо рядок загального рівняння
+                // --- НОВА ЛОГІКА: Математично розкриваємо дужки ---
+                // (x-h)^2 = x^2 - 2hx + h^2
+                // (y-k)^2 = y^2 - 2ky + k^2
+                // ... і т.д.
+
+                let A = 0, B = 0, C = 0, D = 0, E = 0, F = 0;
+
                 if (activeTab === 'ellipse') {
                     if (!params.a || !params.b) throw new Error("'a' та 'b' мають бути задані");
-                    equationString = `(x - ${params.h})^2 / ${params.a**2} + (y - ${params.k})^2 / ${params.b**2} = 1`;
+                    const a2 = params.a**2, b2 = params.b**2;
+                    // b^2(x-h)^2 + a^2(y-k)^2 = a^2*b^2
+                    // b^2(x^2 - 2hx + h^2) + a^2(y^2 - 2ky + k^2) - a^2*b^2 = 0
+                    // b^2*x^2 - 2b^2*h*x + b^2*h^2 + a^2*y^2 - 2a^2*k*y + a^2*k^2 - a^2*b^2 = 0
+                    A = b2;
+                    C = a2;
+                    D = -2 * b2 * params.h;
+                    E = -2 * a2 * params.k;
+                    F = b2 * params.h**2 + a2 * params.k**2 - a2 * b2;
                 
                 } else if (activeTab === 'hyperbola') {
                     if (!params.a || !params.b) throw new Error("'a' та 'b' мають бути задані");
+                    const a2 = params.a**2, b2 = params.b**2;
+                    
                     if (params.orientation === 'vertical') {
-                        equationString = `(y - ${params.k})^2 / ${params.a**2} - (x - ${params.h})^2 / ${params.b**2} = 1`;
+                        // b^2(y-k)^2 - a^2(x-h)^2 = a^2*b^2
+                        // b^2(y^2 - 2ky + k^2) - a^2(x^2 - 2hx + h^2) - a^2*b^2 = 0
+                        // b^2*y^2 - 2b^2*k*y + b^2*k^2 - a^2*x^2 + 2a^2*h*x - a^2*h^2 - a^2*b^2 = 0
+                        A = -a2;
+                        C = b2;
+                        D = 2 * a2 * params.h;
+                        E = -2 * b2 * params.k;
+                        F = b2 * params.k**2 - a2 * params.h**2 - a2 * b2;
                     } else {
-                        equationString = `(x - ${params.h})^2 / ${params.a**2} - (y - ${params.k})^2 / ${params.b**2} = 1`;
+                        // b^2(x-h)^2 - a^2(y-k)^2 = a^2*b^2
+                        // b^2(x^2 - 2hx + h^2) - a^2(y^2 - 2ky + k^2) - a^2*b^2 = 0
+                        // b^2*x^2 - 2b^2*h*x + b^2*h^2 - a^2*y^2 + 2a^2*k*y - a^2*k^2 - a^2*b^2 = 0
+                        A = b2;
+                        C = -a2;
+                        D = -2 * b2 * params.h;
+                        E = 2 * a2 * params.k;
+                        F = b2 * params.h**2 - a2 * params.k**2 - a2 * b2;
                     }
                 
                 } else if (activeTab === 'parabola') {
                     if (!params.p) throw new Error("'p' має бути заданий");
                     let p4 = 4 * params.p;
-                    if (params.orientation === 'horizontal-left') {
-                        p4 = -p4;
-                        equationString = `(y - ${params.k})^2 = ${p4} * (x - ${params.h})`;
-                    } else if (params.orientation === 'vertical-up') {
-                        equationString = `(x - ${params.h})^2 = ${p4} * (y - ${params.k})`;
-                    } else if (params.orientation === 'vertical-down') {
-                        p4 = -p4;
-                        equationString = `(x - ${params.h})^2 = ${p4} * (y - ${params.k})`;
-                    } else { // horizontal-right
-                        equationString = `(y - ${params.k})^2 = ${p4} * (x - ${params.h})`;
+                    // (y-k)^2 = 4p(x-h) -> y^2 - 2ky + k^2 - 4px + 4ph = 0
+                    // (x-h)^2 = 4p(y-k) -> x^2 - 2hx + h^2 - 4py + 4pk = 0
+                    
+                    switch (params.orientation) {
+                        case 'horizontal-right': // y^2 - 4px - 2ky + (k^2 + 4ph) = 0
+                            C = 1; D = -p4; E = -2 * params.k; F = params.k**2 + p4 * params.h;
+                            break;
+                        case 'horizontal-left': // (y-k)^2 = -4p(x-h) -> y^2 + 4px - 2ky + (k^2 - 4ph) = 0
+                            p4 = -p4;
+                            C = 1; D = -p4; E = -2 * params.k; F = params.k**2 + p4 * params.h;
+                            break;
+                        case 'vertical-up': // x^2 - 2hx + h^2 - 4py + 4pk = 0
+                            A = 1; D = -2 * params.h; E = -p4; F = params.h**2 + p4 * params.k;
+                            break;
+                        case 'vertical-down': // (x-h)^2 = -4p(y-k) -> x^2 - 2hx + h^2 + 4py - 4pk = 0
+                            p4 = -p4;
+                            A = 1; D = -2 * params.h; E = -p4; F = params.h**2 + p4 * params.k;
+                            break;
                     }
                 }
+                
+                // Створюємо рядок загального рівняння, який парсер ТОЧНО зрозуміє
+                equationString = `${A}x^2 + ${C}y^2 + ${D}x + ${E}y + ${F} = 0`;
+
+                // --- Кінець нової логіки ---
 
                 // Тепер використовуємо існуючі функції з solver.js та graph.js
-                // Перевіряємо, чи вони завантажені (чи є в window)
                 if (typeof Solver.parseGeneralEquation === 'function' && 
                     typeof Solver.analyzeGeneral === 'function' &&
                     typeof plotAnalysis === 'function' && 
@@ -119,17 +161,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!parsed) throw new Error("Не вдалося розібрати згенероване рівняння.");
                     
                     const analysis = Solver.analyzeGeneral(parsed);
-                    window.lastAnalysis = analysis; // Зберігаємо для інших кнопок
+                    window.lastAnalysis = analysis; 
 
-                    // 1. Аналізуємо (для інфо-панелі)
                     displayAnalysis(analysis); // Використовуємо функцію з graph.js
                     document.getElementById('stepsOutput').innerHTML = Solver.getSteps(parsed, analysis);
-                    
-                    // 2. Будуємо графік
                     plotAnalysis(analysis); // Використовуємо функцію з graph.js
 
                 } else {
-                    // Ця помилка спрацює, якщо solver.js або graph.js не завантажились
                     throw new Error("Необхідні функції (Solver/plotAnalysis/displayAnalysis) не завантажено. Перевірте шляхи до файлів.");
                 }
 
@@ -143,34 +181,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 3. ЛОГІКА ДЛЯ СОНІФІКАЦІЇ ГІПЕРБОЛИ ---
     
-    // Знаходимо елементи
     const playBtn = document.getElementById('playHyperbolaSound');
     const aInput = document.getElementById('hyperbola-a');
     const bInput = document.getElementById('hyperbola-b');
 
-    // Перевіряємо, чи ми на правильній сторінці
     if (!playBtn || !aInput || !bInput) {
-        // Якщо кнопки немає, просто виходимо (це не сторінка canonical.html)
         return;
     }
 
-    // Іконки для кнопки
     const playIconHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;"><path d="M8 5v14l11-7z"/></svg> Почути асимптоту (за $a$ і $b$)`;
     const stopIconHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;"><path d="M6 6h12v12H6z"/></svg> Зупинити`;
 
-    // Глобальні змінні для керування аудіо
     let audioCtx;
     let oscillator;
     let gainNode;
     let isPlaying = false;
-    let stopTimer; // Таймер для автоматичної зупинки
+    let stopTimer; 
 
-    // Налаштування звуку
-    const DURATION = 4;        // 4 секунди
-    const MIN_FREQ = 50;       // Басова нота (Гц)
-    const FREQ_SCALE = 300;    // Множник висоти тону
-    const U_RANGE_SCALE = 20;  // Як "далеко" ми йдемо по осі X
-    const CURVE_POINTS = 100;  // Плавність звуку
+    const DURATION = 4;        
+    const MIN_FREQ = 50;       
+    const FREQ_SCALE = 300;    
+    const U_RANGE_SCALE = 20;  
+    const CURVE_POINTS = 100;  
 
     function playHyperbolaSonification() {
         if (isPlaying) {
@@ -178,11 +210,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // 1. Отримуємо значення A і B з полів вводу
         let a = parseFloat(aInput.value);
         let b = parseFloat(bInput.value);
 
-        // Перевірка на нульові або некоректні значення
         if (!a || a <= 0 || !b || b <= 0) {
             alert("Будь ласка, введіть додатні значення для 'a' та 'b', щоб почути звук.");
             return;
@@ -191,26 +221,22 @@ document.addEventListener('DOMContentLoaded', () => {
         isPlaying = true;
         playBtn.innerHTML = stopIconHTML;
 
-        // 2. Створюємо аудіо-контекст та вузли
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         oscillator = audioCtx.createOscillator();
         gainNode = audioCtx.createGain();
         oscillator.type = 'sine';
 
-        // 3. Генеруємо масив звуку
         const waveArray = new Float32Array(CURVE_POINTS);
         for (let i = 0; i < CURVE_POINTS; i++) {
-            const t_norm = i / (CURVE_POINTS - 1); // Час від 0 до 1
+            const t_norm = i / (CURVE_POINTS - 1); 
             const u = 1 + (t_norm * U_RANGE_SCALE) / a;
             const y_diff = b * (u - Math.sqrt(u * u - 1));
             waveArray[i] = MIN_FREQ + (y_diff * FREQ_SCALE);
         }
 
-        // 4. Запускаємо звук
         const now = audioCtx.currentTime;
         oscillator.frequency.setValueCurveAtTime(waveArray, now, DURATION);
 
-        // Плавний початок і кінець
         gainNode.gain.setValueAtTime(0, now);
         gainNode.gain.linearRampToValueAtTime(0.4, now + 0.1);
         gainNode.gain.setValueAtTime(0.4, now + DURATION - 0.2);
@@ -220,7 +246,6 @@ document.addEventListener('DOMContentLoaded', () => {
         gainNode.connect(audioCtx.destination);
         oscillator.start(now);
 
-        // 5. Плануємо зупинку
         oscillator.stop(now + DURATION);
         stopTimer = setTimeout(stopSonification, DURATION * 1000);
     }
@@ -237,6 +262,5 @@ document.addEventListener('DOMContentLoaded', () => {
         playBtn.innerHTML = playIconHTML;
     }
 
-    // Прив'язуємо функцію до кнопки
     playBtn.addEventListener('click', playHyperbolaSonification);
 });
