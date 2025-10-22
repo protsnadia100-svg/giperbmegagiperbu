@@ -1,4 +1,4 @@
-/* theory.js — небольшая логика для страницы теории (theme sync + appearance) */
+
 document.addEventListener('DOMContentLoaded', ()=>{
   const t = localStorage.getItem('conics_theme') || 'dark';
   document.body.classList.toggle('theme-light', t === 'light');
