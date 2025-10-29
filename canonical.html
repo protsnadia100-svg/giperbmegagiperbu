@@ -3,20 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title> Канонічна побудова</title>
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <title>ConicLab — Канонічна побудова</title> <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <link rel="stylesheet" href="style.css" />
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
 <body>
   <header class="topbar">
     <div class="brand">
       <div class="logo">Команда ГіперМега</div>
-      <div class="subtitle">Інтерактивна аналітична геометрія</div>
-    </div>
+      <div class="subtitle">Криві другого порядку</div> </div>
 <nav class="nav">
-  <a id="nav-build" class="nav-link active" href="index.html">Загальна побудова</a>
-  <a id="nav-canonical" class="nav-link" href="canonical.html">Канонічна побудова</a>
-  <a id="nav-theory" class="nav-link" href="theory.html">Теорія</a>
+  <a id="nav-build" class="nav-link" href="index.html">Загальна побудова</a> <a id="nav-canonical" class="nav-link active" href="canonical.html">Канонічна побудова</a> <a id="nav-theory" class="nav-link" href="theory.html">Теорія</a>
   <a href="quiz.html" class="nav-link">Вікторина</a>
   <a href="tasks.html" class="nav-link">Задачі</a>
 </nav>
@@ -62,7 +61,6 @@
               </select>
             </div>
           </div>
-          
           <div class="controls-row" style="margin-top: 15px;">
             <button id="playHyperbolaSound" class="btn primary">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;">
@@ -70,7 +68,6 @@
               </svg>
               Почути асимптоту (за a і b)
             </button>
-          </div>
           </div>
         </div>
 
@@ -90,13 +87,21 @@
             </div>
           </div>
         </div>
-        
+
         <div class="controls-row">
           <button id="buildBtnCanonical" class="btn primary">Побудувати</button>
         </div>
-      </div>
 
-      <div class="card info-panel">
+        <div>
+          <h4 class="controls-group-title">Інтерактивні Режими</h4>
+          <div class="controls-row creative-features">
+               <button id="exploreChordsBtn" class="btn creative">Хорди</button>
+               <button id="tangentModeBtn" class="btn creative">Дотична</button>
+               <button id="toggle3DBtn" class="btn creative">3D</button>
+               <button id="locusAnimationBtn" class="btn creative">Анімація</button>
+          </div>
+        </div>
+        </div> <div class="card info-panel">
         <h3>Результат</h3>
         <div id="solveOutput" class="result">Введіть параметри та натисніть "Побудувати".</div>
         <div class="controls-row small">
@@ -107,11 +112,16 @@
     </aside>
 
     <section class="right-panel">
-      <div id="graphCanvas" class="graph-canvas"></div>
+      <div id="graphContainer" class="graph-container">
+          <div id="graphCanvas" class="graph-canvas"></div>
+          <canvas id="animationCanvas" class="animation-canvas"></canvas>
+          <div id="chordLengthDisplay" class="info-display"></div>
+          <div id="tangentInfoDisplay" class="info-display"></div>
+      </div>
       <div class="legend">
         <div><span class="legend-dot curve"></span> Крива</div>
-        <div><span class="legend-dot focus"></span> Фокуси</div>
-        <div><span class="legend-line directrix"></span> Директриси</div>
+        <div><span class="legend-dot conjugate"></span> Спряжена</div> <div><span class="legend-dot focus"></span> Фокуси</div>
+        <div><span class="legend-dot surface-3d"></span> 3D-поверхня</div> <div><span class="legend-line directrix"></span> Директриси</div>
         <div><span class="legend-line major-axis"></span> Головна вісь</div>
         <div><span class="legend-line minor-axis"></span> Побічна вісь</div>
         <div><span class="legend-line asymptote"></span> Асимптоти</div>
@@ -120,13 +130,9 @@
   </main>
 
   <footer class="footer">
-    <div>• Інтерактивна аналітична геометрія</div>
-  </footer>
-  
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <div>Команда Гіпермега • Криві другого порядку</div> </footer>
+
   <script src="scripts/solver.js"></script>
-  <script src="scripts/graph.js"></script> 
-  <script src="scripts/canonical.js"></script> 
-</body>
+  <script src="scripts/graph.js"></script> <script src="scripts/locus_animation.js"></script> <script src="scripts/canonical.js"></script>
+  <script src="scripts/theory.js"></script> </body>
 </html>

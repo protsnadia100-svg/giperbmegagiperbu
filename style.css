@@ -713,3 +713,17 @@ body.theme-light .card-panel .controls-row {
   .graph-container{height:420px}
   .graph-canvas{height:420px}
 }
+/* ... (всі ваші існуючі стилі) ... */
+
+/* Стиль для графіків на сторінці задач */
+.task-graph-canvas {
+  height: 400px;
+  width: 100%;
+  border-radius: 8px;
+  margin-top: 15px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+body.theme-light .task-graph-canvas {
+  background: rgba(0, 0, 0, 0.03);
+}
