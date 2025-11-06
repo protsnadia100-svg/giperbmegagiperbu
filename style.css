@@ -727,3 +727,185 @@ body.theme-light .card-panel .controls-row {
 body.theme-light .task-graph-canvas {
   background: rgba(0, 0, 0, 0.03);
 }
+/* ... (всі ваші існуючі стилі) ... */
+
+/* Стиль для графіків на сторінці задач */
+.task-graph-canvas {
+  height: 400px;
+  width: 100%;
+  border-radius: 8px;
+  margin-top: 15px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+body.theme-light .task-graph-canvas {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+/* ===============================================
+  НОВІ СТИЛІ для посилань на побудову в задачах 
+===============================================
+*/
+
+.task-plot-links {
+  margin-top: 15px;
+  margin-bottom: 15px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.task-plot-links strong {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-right: 5px;
+}
+
+.task-plot-links .btn {
+  margin-top: 0;
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.05);
+  font-weight: 500;
+  padding: 8px 12px;
+}
+
+.task-plot-links .btn:hover {
+  background: var(--accent);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+body.theme-light .task-plot-links {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+body.theme-light .task-plot-links .btn {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* Стиль для тексту запитання у вікторині */
+.quiz-question-text {
+  font-size: 1.25rem;
+  color: var(--muted);
+  margin-top: -10px;
+  margin-bottom: 20px;
+  min-height: 30px; /* Забезпечує стабільну висоту */
+  font-weight: 500;
+}
+
+
+/* Стиль для кнопок керування лотереєю */
+#lottery-controls {
+  justify-content: center;
+  margin-top: 25px;
+}
+#lottery-controls .btn {
+  font-size: 1.1rem;
+  padding: 10px 20px;
+}
+
+/* Стилі для ручного вводу дотичної */
+.manual-tangent-container {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.manual-tangent-container label {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 8px;
+  display: block;
+}
+.manual-tangent-container .controls-row {
+  margin-top: 0;
+  gap: 5px;
+}
+.manual-tangent-container input {
+  flex: 1; /* Займає вільне місце */
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: transparent;
+  color: inherit;
+  font-size: 0.95rem;
+}
+.manual-tangent-container .btn {
+  margin-top: 0;
+}
+/* Світла тема */
+body.theme-light .manual-tangent-container {
+  border-top-color: rgba(0, 0, 0, 0.08);
+}
+body.theme-light .manual-tangent-container input {
+  border-color: rgba(0, 0, 0, 0.15);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+/* ... (всі ваші існуючі стилі) ... */
+
+/* СТИЛІ ДЛЯ ОНОВЛЕНОГО БЛОКУ ДОТИЧНОЇ */
+/* (Замініть старі .manual-tangent-container) */
+
+.manual-tangent-container {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Відступ між "Знайти" і "Задати" */
+}
+
+.tangent-tool-group > label {
+  font-size: 1rem;
+  color: var(--muted);
+  margin-bottom: 12px;
+  display: block;
+  font-weight: 600;
+}
+
+.tangent-tool-group .controls-row {
+  margin-top: 0;
+  gap: 8px;
+}
+
+/* Специфічно для полів x, y */
+.tangent-tool-group .controls-row input {
+  flex: 1; /* Поля x, y займають вільне місце */
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  text-align: center;
+}
+.tangent-tool-group .controls-row .btn {
+  flex-grow: 0; /* Кнопка "Знайти" не розтягується */
+  margin-top: 0;
+  width: auto; /* Дозволяє кнопці мати власну ширину */
+}
+
+/* Для блоку A, B, C */
+.manual-tangent-container .coeff-grid-3 {
+  margin: 10px 0;
+}
+.manual-tangent-container .btn {
+  width: 100%;
+  margin-top: 0;
+}
+
+/* Світла тема */
+body.theme-light .manual-tangent-container {
+  border-top-color: rgba(0, 0, 0, 0.08);
+}
+body.theme-light .tangent-tool-group .controls-row input {
+  border-color: rgba(0, 0, 0, 0.15);
+  background: rgba(0, 0, 0, 0.02);
+}

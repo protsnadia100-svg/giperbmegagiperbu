@@ -1,16 +1,16 @@
 /* graph.js
-    - UI bindings (index.html)
+    - UI bindings (index.html, canonical.html)
     - uses Solver.* for math
     - draws implicit contour via Plotly (level 0)
     - draws foci, directrices, axes, asymptotes
-    - Drag-n-Drop functionality
-    - Equation library modal
     - Interactive Modes:
-        - Focal Chord Explorer
-        - Tangent Line Builder
+        - Focal Chord Explorer (ВИПРАВЛЕНО)
+        - Tangent Line Builder (ОНОВЛЕНО: ручний ввід за коефіцієнтами + пошук за точкою)
         - 3D Surface Viewer
         - Locus Animation
-    - ОНОВЛЕНО: Додано console.log для діагностики, покращено обробку подій та оновлення фігур.
+    - ОНОВЛЕНО: Покращено логіку відображення дотичної.
+    - ОНОВЛЕНО: Додано відображення рівняння дотичної у блоці аналізу.
+    - ОНОВЛЕНО: Підтримка введення дробів у полях коефіцієнтів.
 */
 
 document.addEventListener('DOMContentLoaded', initUI);
@@ -18,16 +18,17 @@ document.addEventListener('DOMContentLoaded', initUI);
 function $(id){ return document.getElementById(id); }
 
 function initUI(){
-    // ... (весь код initUI залишається ТАКИМ САМИМ, як у попередній версії) ...
     const eqInput = $('equationInput');
     window.isChordExplorerActive = false;
     window.isTangentModeActive = false;
     window.is3DViewActive = false;
     window.isLocusAnimationActive = false;
     window.lastTangentInfo = null;
+    window.defaultTangentInfo = null; 
 
     if ($('buildBtn')) $('buildBtn').addEventListener('click', analyzeAndPlot);
     if ($('analyzeBtn')) $('analyzeBtn').addEventListener('click', analyzeOnly);
+    
     if ($('saveExampleBtn')) $('saveExampleBtn').addEventListener('click', () => {
         syncEquationInput();
         const txt = eqInput.value.trim();
@@ -39,10 +40,11 @@ function initUI(){
         if ($('solveOutput')) $('solveOutput').innerHTML = 'Введіть рівняння для аналізу.';
         if ($('stepsOutput')) { $('stepsOutput').innerHTML = ''; $('stepsOutput').classList.add('hidden'); }
         if (eqInput) eqInput.value = '';
-        syncCoeffBoxes();
+        if ($('coeff-A')) syncCoeffBoxes(); // Оновлення для index.html
         localStorage.removeItem('conics_last_equation');
         window.lastAnalysis = null;
         window.lastTangentInfo = null;
+        window.defaultTangentInfo = null; 
     });
     if ($('toggleExtrasBtn')) $('toggleExtrasBtn').addEventListener('click', () => {
         window.showExtras = !window.showExtras;
@@ -57,10 +59,15 @@ function initUI(){
     if ($('shareBtn')) $('shareBtn').addEventListener('click', shareEquation);
     if ($('stepsBtn')) $('stepsBtn').addEventListener('click', () => { if ($('stepsOutput')) $('stepsOutput').classList.toggle('hidden'); });
 
+    // Інтерактивні режими
     if ($('exploreChordsBtn')) $('exploreChordsBtn').addEventListener('click', toggleChordExplorer);
     if ($('tangentModeBtn')) $('tangentModeBtn').addEventListener('click', toggleTangentMode);
     if ($('toggle3DBtn')) $('toggle3DBtn').addEventListener('click', toggle3DView);
     if ($('locusAnimationBtn')) $('locusAnimationBtn').addEventListener('click', toggleLocusAnimation);
+    
+    // Ручна дотична та пошук за точкою
+    if ($('plotManualTangentBtn')) $('plotManualTangentBtn').addEventListener('click', plotTangentByEquation);
+    if ($('findTangentAtPointBtn')) $('findTangentAtPointBtn').addEventListener('click', findTangentAtPoint);
 
     if ($('libraryBtn')) {
         $('libraryBtn').addEventListener('click', openLibraryModal);
@@ -69,7 +76,11 @@ function initUI(){
     }
 
     const coeffInputs = document.querySelectorAll('.coeff-input');
-    coeffInputs.forEach(input => { input.addEventListener('input', syncEquationInput); });
+    coeffInputs.forEach(input => { 
+        // ДОЗВОЛИТИ РЯДОК ДЛЯ ДРОБІВ
+        input.setAttribute('type', 'text');
+        input.addEventListener('input', syncEquationInput); 
+    });
 
     const savedTheme = localStorage.getItem('conics_theme') || 'dark';
     document.body.classList.toggle('theme-light', savedTheme === 'light');
@@ -91,26 +102,35 @@ function initUI(){
     if ($('toggleExtrasBtn')) $('toggleExtrasBtn').textContent = window.showExtras ? 'Сховати Осі/Фокуси' : 'Осі/Фокуси';
     if ($('toggleConjugateBtn')) $('toggleConjugateBtn').textContent = window.showConjugate ? 'Сховати Спряжену' : 'Спряжена';
     if ($('theoryShort')) $('theoryShort').innerHTML = '<b>Гіпербола:</b> Δ > 0. Клацни "Теорія" для деталей.';
-    loadEquationFromURLOrStorage();
-    setupGraphEventListeners(); // Перенесено сюди для гарантії ініціалізації Plotly
+    
+    // Тільки для index.html
+    if($('coeff-A')) {
+        loadEquationFromURLOrStorage();
+    }
+    setupGraphEventListeners(); 
 }
 
+// --- ОНОВЛЕНО: ВИКОРИСТОВУЄМО parseNumberExpression ---
 function syncEquationInput() {
-    // ... (код syncEquationInput без змін) ...
-    const A = parseFloat($('coeff-A').value) || 0;
-    const B = parseFloat($('coeff-B').value) || 0;
-    const C = parseFloat($('coeff-C').value) || 0;
-    const D = parseFloat($('coeff-D').value) || 0;
-    const E = parseFloat($('coeff-E').value) || 0;
-    const F = parseFloat($('coeff-F').value) || 0;
+    if (!$('coeff-A')) return; 
+    
+    // Зчитуємо вхідні рядки, але розраховуємо їх числове значення для рівняння
+    const A = Solver.parseNumberExpression($('coeff-A').value);
+    const B = Solver.parseNumberExpression($('coeff-B').value);
+    const C = Solver.parseNumberExpression($('coeff-C').value);
+    const D = Solver.parseNumberExpression($('coeff-D').value);
+    const E = Solver.parseNumberExpression($('coeff-E').value);
+    const F = Solver.parseNumberExpression($('coeff-F').value);
 
     let eq = '';
     const addTerm = (coeff, term) => {
-        if (coeff === 0) return '';
+        if (Math.abs(coeff) < 1e-9) return '';
         let sign = coeff > 0 ? '+ ' : '- ';
         let val = Math.abs(coeff);
         if (eq === '' && sign === '+ ') sign = '';
-        if (val === 1 && term !== '') val = '';
+        if (Math.abs(val - 1) < 1e-9 && term !== '') val = ''; // val = 1
+        else val = val.toFixed(5).replace(/\.?0+$/, ''); // Точне відображення
+
         return `${sign}${val}${term} `;
     };
 
@@ -121,23 +141,27 @@ function syncEquationInput() {
     eq += addTerm(E, 'y');
     eq += addTerm(F, '');
 
-    if (eq.length > 0) eq = eq.trimEnd() + ' = 0';
+    if (eq.length > 0) eq = eq.trimEnd().replace(/^\+ /, '') + ' = 0';
 
     $('equationInput').value = eq.trim();
 }
 
+// --- ОНОВЛЕНО: ЗАПОВНЕННЯ ВВОДУ, НЕ ЗМІНЮЮЧИ ФОРМАТ ДРОБУ ---
 function syncCoeffBoxes() {
-    // ... (код syncCoeffBoxes без змін) ...
+    if (!$('coeff-A')) return;
+    
     const eq = $('equationInput').value;
     const parsed = Solver.parseGeneralEquation(eq);
 
     if (parsed) {
-        $('coeff-A').value = parsed.A || '';
-        $('coeff-B').value = parsed.B || '';
-        $('coeff-C').value = parsed.C || '';
-        $('coeff-D').value = parsed.D || '';
-        $('coeff-E').value = parsed.E || '';
-        $('coeff-F').value = parsed.F || '';
+        // Заповнюємо чистими числами, оскільки ми не знаємо, як користувач ввів дріб
+        const f = n => Math.abs(n) < 1e-9 ? '' : n.toFixed(5).replace(/\.?0+$/, '');
+        $('coeff-A').value = f(parsed.A);
+        $('coeff-B').value = f(parsed.B);
+        $('coeff-C').value = f(parsed.C);
+        $('coeff-D').value = f(parsed.D);
+        $('coeff-E').value = f(parsed.E);
+        $('coeff-F').value = f(parsed.F);
     } else {
         ['A', 'B', 'C', 'D', 'E', 'F'].forEach(c => $(`coeff-${c}`).value = '');
     }
@@ -148,7 +172,6 @@ function syncCoeffBoxes() {
 
 function setupGraphEventListeners() {
     const canvas = $('graphCanvas');
-    // Чекаємо, поки Plotly буде готовий
     if (canvas && canvas.layout) {
         try {
             canvas.removeAllListeners('plotly_hover');
@@ -157,31 +180,27 @@ function setupGraphEventListeners() {
             canvas.on('plotly_hover', handleGraphHover);
             canvas.on('plotly_click', handleGraphClick);
             canvas.on('plotly_unhover', handleGraphUnhover);
-            console.log("Plotly event listeners attached.");
         } catch (e) {
             console.error("Failed to attach Plotly listeners:", e);
         }
     } else {
-        // Якщо Plotly ще не готовий, спробуємо трохи пізніше
-        console.log("Plotly not ready, retrying listener setup...");
         setTimeout(setupGraphEventListeners, 100);
     }
 }
 
 
 function handleGraphUnhover() {
-    // ... (код handleGraphUnhover без змін) ...
     if(window.isChordExplorerActive) {
         $('chordLengthDisplay').style.display = 'none';
         const graphDiv = $('graphCanvas');
         const currentShapes = (graphDiv.layout && graphDiv.layout.shapes) || [];
+        // ВИПРАВЛЕНО: Фільтруємо (ВИДАЛЯЄМО) 'focal-chord', а не зберігаємо 'tangent-line'
         const newShapes = currentShapes.filter(s => s.name !== 'focal-chord');
         if (newShapes.length !== currentShapes.length) { Plotly.relayout(graphDiv, { shapes: newShapes }); }
     }
 }
 
 function deactivateAllModes() {
-    // ... (код deactivateAllModes без змін) ...
     if (window.isLocusAnimationActive) {
         LocusAnimator.stop();
         const graphDiv = $('graphCanvas');
@@ -189,26 +208,30 @@ function deactivateAllModes() {
     }
     window.isChordExplorerActive = false;
     window.isTangentModeActive = false;
-    window.is3DViewActive = false;
     window.isLocusAnimationActive = false;
 
     $('exploreChordsBtn')?.classList.remove('active');
     $('tangentModeBtn')?.classList.remove('active');
-    $('toggle3DBtn')?.classList.remove('active');
     $('locusAnimationBtn')?.classList.remove('active');
 
     $('chordLengthDisplay').style.display = 'none';
     $('tangentInfoDisplay').style.display = 'none';
-    window.lastTangentInfo = null;
+    $('manualTangentContainer')?.classList.add('hidden'); // Ховаємо поле вводу
 
     const graphDiv = $('graphCanvas');
-    if (graphDiv.layout) { Plotly.relayout(graphDiv, { shapes: [] }); }
+    if (graphDiv.layout) { 
+        let shapes = [];
+        // Зберігаємо лише дотичну, ЯКЩО вона була (або дефолтна, або з кліку)
+        if (window.lastTangentInfo) {
+             shapes = (graphDiv.layout.shapes || []).filter(s => s.name === 'tangent-line' || s.name === 'tangent-point');
+        }
+        Plotly.relayout(graphDiv, { shapes: shapes }); 
+    }
 
     if (window.lastAnalysis) displayAnalysis(window.lastAnalysis);
 }
 
 function toggleChordExplorer() {
-    // ... (код toggleChordExplorer без змін) ...
     const willBeActive = !window.isChordExplorerActive;
     if (window.is3DViewActive && window.lastAnalysis) { plotAnalysis(window.lastAnalysis); }
     deactivateAllModes();
@@ -217,27 +240,43 @@ function toggleChordExplorer() {
 }
 
 function toggleTangentMode() {
-    // ... (код toggleTangentMode без змін) ...
     const willBeActive = !window.isTangentModeActive;
     if (window.is3DViewActive && window.lastAnalysis) { plotAnalysis(window.lastAnalysis); }
     deactivateAllModes();
     window.isTangentModeActive = willBeActive;
     $('tangentModeBtn').classList.toggle('active', willBeActive);
+    
+    if (!willBeActive) {
+        // Режим ВИМКНЕНО
+        window.lastTangentInfo = window.defaultTangentInfo; // Повертаємо дефолтну дотичну
+        plotAnalysis(window.lastAnalysis); 
+        $('tangentInfoDisplay').style.display = 'none';
+        $('manualTangentContainer').classList.add('hidden'); 
+    } else {
+         // Режим УВІМКНЕНО
+         window.lastTangentInfo = null; // Скидаємо дотичну, чекаємо на клік або ввід
+         Plotly.relayout($('graphCanvas'), { shapes: [] }); // Очищуємо графік від дотичних
+         $('tangentInfoDisplay').textContent = 'Натисніть на криву або задайте дотичну.';
+         $('tangentInfoDisplay').style.display = 'block';
+         $('manualTangentContainer').classList.remove('hidden'); 
+    }
+    displayAnalysis(window.lastAnalysis);
 }
 
 function toggle3DView() {
-    // ... (код toggle3DView без змін) ...
-     const willBeActive = !window.is3DViewActive;
+    const willBeActive = !window.is3DViewActive;
     deactivateAllModes();
+    window.is3DViewActive = willBeActive; 
     if (willBeActive) {
         if (window.lastAnalysis) {
-            window.is3DViewActive = true;
             $('toggle3DBtn').classList.add('active');
             plot3DView(window.lastAnalysis);
         } else {
             alert("Спочатку побудуйте 2D-графік.");
+            window.is3DViewActive = false;
         }
     } else {
+        $('toggle3DBtn').classList.remove('active');
         if (window.lastAnalysis) {
             plotAnalysis(window.lastAnalysis);
         }
@@ -245,7 +284,6 @@ function toggle3DView() {
 }
 
 function toggleLocusAnimation() {
-    // ... (код toggleLocusAnimation без змін) ...
     const willBeActive = !window.isLocusAnimationActive;
     if (window.is3DViewActive && window.lastAnalysis) {
         plotAnalysis(window.lastAnalysis);
@@ -259,11 +297,11 @@ function toggleLocusAnimation() {
     if (willBeActive) {
         if (window.lastAnalysis) {
             if (graphDiv.data && graphDiv.data.length > 0) {
-                Plotly.restyle(graphDiv, { visible: false }, [0, 1]);
+                Plotly.restyle(graphDiv, { visible: false }, [0, 1]); // Ховаємо основну криву
             }
             const onAnimationComplete = () => {
                 if (graphDiv.data && graphDiv.data.length > 0) {
-                    Plotly.restyle(graphDiv, { visible: true }, [0, 1]);
+                    Plotly.restyle(graphDiv, { visible: true }, [0, 1]); // Показуємо знову
                 }
                  $('locusAnimationBtn').classList.remove('active');
                  window.isLocusAnimationActive = false;
@@ -274,6 +312,7 @@ function toggleLocusAnimation() {
             deactivateAllModes();
         }
     } else {
+        // Якщо вимкнули вручну
         if (graphDiv.data && graphDiv.data.length > 0) {
             Plotly.restyle(graphDiv, { visible: true }, [0, 1]);
         }
@@ -281,23 +320,21 @@ function toggleLocusAnimation() {
 }
 
 
-// --- ОБРОБНИКИ ПОДІЙ НА ГРАФІКУ (ОНОВЛЕНО ДЛЯ ДІАГНОСТИКИ) ---
+// --- ОБРОБНИКИ ПОДІЙ НА ГРАФІКУ ---
 
 function handleGraphHover(data) {
-    // console.log("Hover event:", data); // Діагностика
+    // ВИПРАВЛЕНО: Режим хорд
     if (!window.isChordExplorerActive || !window.lastAnalysis || !data || !data.points || data.points.length === 0) return;
     const pointData = data.points[0];
 
-    // Повертаємо перевірку curveNumber
-    if (pointData.curveNumber !== 0 && pointData.curveNumber !== 1) { // Дозволяємо ховер на основній (0) та спряженій (1) кривій
-         console.log("Hover ignored, not on main curve:", pointData.curveNumber);
+    if (pointData.curveNumber !== 0 && pointData.curveNumber !== 1) { 
          return;
     }
 
     const {extras, parsed} = window.lastAnalysis, foci=[];
     if (extras.f1 && extras.f2) foci.push(extras.f1, extras.f2);
     else if (extras.focus) foci.push([extras.focus.x, extras.focus.y]);
-    if (foci.length === 0) { console.log("No foci found for chord."); return; }
+    if (foci.length === 0) { return; }
 
     const probePoint = [pointData.x, pointData.y];
     let closestFocus = foci[0];
@@ -306,10 +343,8 @@ function handleGraphHover(data) {
         const d2 = Math.hypot(probePoint[0] - foci[1][0], probePoint[1] - foci[1][1]);
         if (d2 < d1) closestFocus = foci[1];
     }
-    // console.log("Probe point:", probePoint, "Closest focus:", closestFocus);
 
     const intersections = Solver.getFocalChordIntersections(parsed, closestFocus, probePoint);
-    // console.log("Intersections:", intersections);
 
     if (intersections && intersections.length === 2) {
         const [p1, p2] = intersections;
@@ -318,8 +353,9 @@ function handleGraphHover(data) {
 
         const graphDiv = $('graphCanvas');
         const currentShapes = (graphDiv.layout && graphDiv.layout.shapes) || [];
-        const newShapes = currentShapes.filter(s => s.name !== 'focal-chord'); // Видаляємо стару хорду
-        newShapes.push(newShape); // Додаємо нову
+        // ВИПРАВЛЕНО: Фільтруємо (ВИДАЛЯЄМО) 'focal-chord', зберігаючи решту
+        const newShapes = currentShapes.filter(s => s.name !== 'focal-chord'); 
+        newShapes.push(newShape); 
 
         Plotly.relayout(graphDiv, { shapes: newShapes }).catch(e => console.error("Relayout error (hover):", e));
 
@@ -327,38 +363,34 @@ function handleGraphHover(data) {
         d.textContent = `Довжина хорди: ${length.toFixed(3)}`;
         d.style.display = 'block';
     } else {
-         console.log("No valid intersections found for chord.");
-         handleGraphUnhover(); // Прибираємо хорду, якщо немає перетинів
+         handleGraphUnhover(); 
     }
 }
 
 function handleGraphClick(data) {
-    // console.log("Click event:", data); // Діагностика
     if (!window.isTangentModeActive || !window.lastAnalysis || !data || !data.points || data.points.length === 0) return;
+    
     const pointData = data.points[0];
-
-    // Повертаємо перевірку curveNumber
-    if (pointData.curveNumber !== 0 && pointData.curveNumber !== 1) {
-        console.log("Click ignored, not on main curve:", pointData.curveNumber);
-        return;
+    const point = { x: pointData.x, y: pointData.y };
+    
+    const isClick = pointData.curveNumber !== undefined;
+    
+    if (isClick && (pointData.curveNumber !== 0 && pointData.curveNumber !== 1)) {
+        return; // Клік не по кривій
     }
 
-    const point = { x: pointData.x, y: pointData.y };
-    // console.log("Clicked point:", point);
-
     const tangent = Solver.getTangentLineAtPoint(window.lastAnalysis.parsed, point);
-    // console.log("Tangent result from Solver:", tangent);
 
     const graphDiv = $('graphCanvas');
-    const currentShapes = (graphDiv.layout && graphDiv.layout.shapes) || [];
-    let newShapes = currentShapes.filter(s => s.name !== 'tangent-line'); // Видаляємо стару дотичну
+    const layout = graphDiv.layout;
+    if (!layout || !layout.xaxis || !layout.yaxis || !layout.xaxis.range || !layout.yaxis.range) { console.error("Layout invalid"); return; }
+    
+    let shapes = [];
 
     if (tangent) {
-        window.lastTangentInfo = { point: point, eqStr: tangent.eqStr }; // Зберігаємо інфо
+        window.lastTangentInfo = { point: point, eqStr: tangent.eqStr }; 
 
         const { Fx, Fy, c } = tangent;
-        const layout = graphDiv.layout;
-        if (!layout || !layout.xaxis || !layout.yaxis || !layout.xaxis.range || !layout.yaxis.range) { console.error("Layout invalid"); return; }
         const xRange = layout.xaxis.range, yRange = layout.yaxis.range;
 
         let x0, y0, x1, y1;
@@ -372,52 +404,172 @@ function handleGraphClick(data) {
         } else if (Math.abs(Fx) > 1e-6) { // Вертикальна
             y0 = yMin; x0 = (-Fy * y0 - c) / Fx;
             y1 = yMax; x1 = (-Fy * y1 - c) / Fx;
-        } else { console.error("Cannot draw tangent, Fx and Fy near zero"); return; } // Помилка
+        } else { console.error("Cannot draw tangent, Fx and Fy near zero"); return; } 
 
         const tangentShape = {
             name: 'tangent-line', type: 'line',
             x0: x0, y0: y0, x1: x1, y1: y1,
             line: { color: '#ff6b6b', width: 2.5, dash: 'longdash' }
         };
-        newShapes.push(tangentShape); // Додаємо нову дотичну
-        // console.log("Adding tangent shape:", tangentShape);
+        shapes.push(tangentShape); 
+        
+        shapes.push({
+             name: 'tangent-point', type: 'circle',
+             xref: 'x', yref: 'y',
+             x0: point.x - 0.1, y0: point.y - 0.1,
+             x1: point.x + 0.1, y1: point.y + 0.1,
+             fillcolor: '#ff6b6b', line: { color: '#ff6b6b' }, opacity: 1
+         });
 
         const d = $('tangentInfoDisplay');
-        d.innerHTML = `Дотична: <b>${tangent.eqStr}</b>`;
+        d.innerHTML = `Дотична: <b>${tangent.eqStr}</b><br>у точці (${point.x.toFixed(2)}, ${point.y.toFixed(2)})`;
         d.style.display = 'block';
 
-        displayAnalysis(window.lastAnalysis); // Оновлюємо блок результатів
+        displayAnalysis(window.lastAnalysis); 
 
     } else {
-        window.lastTangentInfo = null; // Очищуємо, якщо не вдалося
+        window.lastTangentInfo = null; 
         const d = $('tangentInfoDisplay');
-        d.textContent = 'Не вдалося побудувати дотичну в цій точці.';
+        d.textContent = 'Не вдалося побудувати дотичну в цій точці (можливо, це центр).';
         d.style.display = 'block';
-        console.log("Solver returned null for tangent.");
-        displayAnalysis(window.lastAnalysis); // Оновлюємо блок результатів
+        displayAnalysis(window.lastAnalysis); 
     }
-    // Надійно оновлюємо фігури
-    Plotly.relayout(graphDiv, { shapes: newShapes }).catch(e => console.error("Relayout error (click):", e));
+    Plotly.relayout(graphDiv, { shapes: shapes }).catch(e => console.error("Relayout error (click):", e));
 }
 
+/**
+ * ОНОВЛЕНО: Малює дотичну за коефіцієнтами A, B, C (підтримує дроби через Solver)
+ */
+function plotTangentByEquation() {
+    // Зчитуємо введені рядки (можуть бути дробами)
+    const Fx = Solver.parseNumberExpression($('tangent-A').value);
+    const Fy = Solver.parseNumberExpression($('tangent-B').value);
+    const c = Solver.parseNumberExpression($('tangent-C').value);
+
+    if (Math.abs(Fx) < 1e-9 && Math.abs(Fy) < 1e-9) {
+        alert("Коефіцієнти A (при x) та B (при y) не можуть одночасно бути нулем.");
+        return;
+    }
+
+    const graphDiv = $('graphCanvas');
+    const layout = graphDiv.layout;
+    if (!layout || !layout.xaxis || !layout.yaxis || !layout.xaxis.range || !layout.yaxis.range) { 
+        console.error("Layout invalid"); return; 
+    }
+
+    const xRange = layout.xaxis.range, yRange = layout.yaxis.range;
+    let x0, y0, x1, y1;
+    const extend = (r) => (r[1] - r[0]) * 1.5;
+    const xMin = xRange[0] - extend(xRange), xMax = xRange[1] + extend(xRange);
+    const yMin = yRange[0] - extend(yRange), yMax = yRange[1] + extend(yRange);
+
+    if (Math.abs(Fy) > 1e-6 * Math.abs(Fx)) { // Не вертикальна
+        x0 = xMin; y0 = (-Fx * x0 - c) / Fy;
+        x1 = xMax; y1 = (-Fx * x1 - c) / Fy;
+    } else if (Math.abs(Fx) > 1e-6) { // Вертикальна
+        y0 = yMin; x0 = (-Fy * y0 - c) / Fx;
+        y1 = yMax; x1 = (-Fy * y1 - c) / Fx;
+    } else { return; } 
+
+    const tangentShape = {
+        name: 'tangent-line', type: 'line',
+        x0: x0, y0: y0, x1: x1, y1: y1,
+        line: { color: '#ff6b6b', width: 2.5, dash: 'longdash' }
+    };
+    
+    const currentShapes = (graphDiv.layout && graphDiv.layout.shapes) || [];
+    const newShapes = currentShapes.filter(s => s.name !== 'tangent-line' && s.name !== 'tangent-point');
+    newShapes.push(tangentShape);
+
+    Plotly.relayout(graphDiv, { shapes: newShapes }).catch(e => console.error("Relayout error (manual tangent):", e));
+
+    window.lastTangentInfo = null; 
+    const simplifiedEq = Solver.getSimplifiedTangentEqString(Fx, Fy, c);
+    $('tangentInfoDisplay').innerHTML = `<b>${simplifiedEq.replace(' = 0', '')}</b> (вручну)`;
+    $('tangentInfoDisplay').style.display = 'block';
+    
+    if(window.lastAnalysis) displayAnalysis(window.lastAnalysis); 
+}
+
+/**
+ * НОВА ФУНКЦІЯ: Знаходить дотичну в заданій точці (x₀, y₀)
+ */
+function findTangentAtPoint() {
+    const x_val_str = $('tangent-x').value;
+    const y_val_str = $('tangent-y').value;
+    
+    // ДОЗВОЛЯЄМО ДРОБИ
+    const x_val = Solver.parseNumberExpression(x_val_str);
+    const y_val = Solver.parseNumberExpression(y_val_str);
+
+    if (isNaN(x_val) || isNaN(y_val)) {
+        alert("Будь ласка, введіть коректні координати (x₀, y₀). Підтримуються дроби.");
+        return;
+    }
+    if (!window.lastAnalysis) {
+        alert("Спочатку побудуйте криву.");
+        return;
+    }
+    
+    // Перевірка, чи точка належить кривій (для кращого досвіду)
+    const p = window.lastAnalysis.parsed;
+    const value = p.A*x_val**2 + p.B*x_val*y_val + p.C*y_val**2 + p.D*x_val + p.E*y_val + p.F;
+    if (Math.abs(value) > 1e-3) {
+         // Якщо точка не на кривій, даємо попередження, але все одно намагаємося побудувати
+         $('tangentInfoDisplay').textContent = `Попередження: Точка (${x_val.toFixed(3)}, ${y_val.toFixed(3)}) не на кривій. Побудовано дотичну в цій точці.`;
+         $('tangentInfoDisplay').style.display = 'block';
+    }
+
+
+    // Імітуємо подію кліку, передаючи дані точки
+    handleGraphClick({
+        points: [{
+            x: x_val,
+            y: y_val,
+            curveNumber: 0 // Важливо: 0 - це завжди основна крива
+        }]
+    });
+}
 
 
 // --- ОСНОВНІ ФУНКЦІЇ АНАЛІЗУ ТА ПОБУДОВИ ---
 
 async function analyzeAndPlot() {
     window.lastTangentInfo = null;
+    window.defaultTangentInfo = null; 
+    
     if(window.isLocusAnimationActive) { deactivateAllModes(); }
-    syncEquationInput();
-    const raw = $('equationInput').value.trim();
-    if (!raw) return;
-    localStorage.setItem('conics_last_equation', raw);
-
-    const parsed = Solver.parseGeneralEquation(raw);
-    if (!parsed) { alert('Не вдалося розібрати рівняння.'); return; }
-    syncCoeffBoxes();
+    
+    if ($('coeff-A')) syncEquationInput(); 
+    
+    const eqInput = $('equationInput');
+    const raw = eqInput ? eqInput.value.trim() : ''; 
+    
+    if (!raw && !$('ellipse-a')) return; 
+    
+    let parsed;
+    if ($('coeff-A')) { // index.html
+        if (!raw) return;
+        localStorage.setItem('conics_last_equation', raw);
+        parsed = Solver.parseGeneralEquation(raw);
+        if (!parsed) { alert('Не вдалося розібрати рівняння.'); return; }
+        syncCoeffBoxes();
+    } else { // canonical.html
+        if (!window.lastAnalysis) {
+             return;
+        }
+        parsed = window.lastAnalysis.parsed;
+    }
 
     const analysis = Solver.analyzeGeneral(parsed);
     window.lastAnalysis = analysis;
+    
+    const defaultTangent = Solver.calculateDefaultTangent(parsed, analysis);
+    if (defaultTangent) {
+        window.defaultTangentInfo = defaultTangent;
+        window.lastTangentInfo = defaultTangent; 
+    }
+
     displayAnalysis(analysis);
     if (window.is3DViewActive) await plot3DView(analysis);
     else await plotAnalysis(analysis);
@@ -425,22 +577,34 @@ async function analyzeAndPlot() {
 
 function analyzeOnly() {
     window.lastTangentInfo = null;
-    syncEquationInput();
+    window.defaultTangentInfo = null;
+    
+    if ($('coeff-A')) syncEquationInput();
+    
     const raw = $('equationInput').value.trim();
     if (!raw) return;
     localStorage.setItem('conics_last_equation', raw);
 
     const parsed = Solver.parseGeneralEquation(raw);
     if (!parsed) { alert('Не вдалося розібрати рівняння.'); return; }
-    syncCoeffBoxes();
+    
+    if ($('coeff-A')) syncCoeffBoxes();
 
     const analysis = Solver.analyzeGeneral(parsed);
     window.lastAnalysis = analysis;
+    
+    const defaultTangent = Solver.calculateDefaultTangent(parsed, analysis);
+    if (defaultTangent) {
+        window.defaultTangentInfo = defaultTangent;
+        window.lastTangentInfo = defaultTangent;
+    }
+    
     displayAnalysis(analysis);
 }
 
 
 async function plotAnalysis(analysis) {
+    if (!analysis) return; 
     if (window.is3DViewActive) deactivateAllModes();
 
     const { extras, parsed, type } = analysis;
@@ -455,7 +619,7 @@ async function plotAnalysis(analysis) {
         contours: { start: 0, end: 0, size: 1, coloring: 'none' },
         line: { color: '#00ffff', width: 2.5, smoothing: 1.3 },
         showscale: false, hoverinfo: 'x+y',
-        uid: 'curve-trace' // Додаємо унікальний ID
+        uid: 'curve-trace' 
     });
 
     data.push({type: 'scatter', x: [null], y: [null], visible: false, name: 'Спряжена', uid: 'conjugate-trace'});
@@ -477,8 +641,8 @@ async function plotAnalysis(analysis) {
     const layout = getLayout(viewRange);
     let shapes = [];
 
-    // Відновлюємо лінію дотичної, якщо вона є і режим активний
-    if (window.lastTangentInfo && window.isTangentModeActive) {
+    // Відновлюємо лінію дотичної (якщо вона не ручна)
+    if (window.lastTangentInfo && (window.isTangentModeActive || window.lastTangentInfo === window.defaultTangentInfo)) {
         const tangent = Solver.getTangentLineAtPoint(analysis.parsed, window.lastTangentInfo.point);
         if (tangent) {
             const { Fx, Fy, c } = tangent;
@@ -501,27 +665,34 @@ async function plotAnalysis(analysis) {
                      x0, y0, x1, y1,
                      line: { color: '#ff6b6b', width: 2.5, dash: 'longdash' }
                  });
+                 
+                 shapes.push({
+                     name: 'tangent-point', type: 'circle',
+                     xref: 'x', yref: 'y',
+                     x0: window.lastTangentInfo.point.x - 0.1, y0: window.lastTangentInfo.point.y - 0.1,
+                     x1: window.lastTangentInfo.point.x + 0.1, y1: window.lastTangentInfo.point.y + 0.1,
+                     fillcolor: '#ff6b6b', line: { color: '#ff6b6b' }, opacity: 1
+                 });
             }
         }
     }
     layout.shapes = shapes;
 
-    // Використовуємо Plotly.react для повного оновлення
     await Plotly.react('graphCanvas', data, layout, {responsive: true});
-    setupGraphEventListeners(); // Пере-прив'язуємо слухачі після react
+    setupGraphEventListeners(); 
 }
 
 
 async function plot3DView(analysis) {
-    // ... (код plot3DView без змін) ...
-     const { type, extras } = analysis;
+    if (!analysis) return;
+    const { type, extras } = analysis;
     const data = [];
     const N = 80;
     let x_s = [], y_s = [], z_s = [];
     let rangeEstimate = 10;
     let title = `3D-модель: ${type}`;
-    const center = extras.center || extras.vertex || {x:0, y:0}; // Додано fallback
-    const vecs = extras.vecs || [[1,0],[0,1]]; // Додано fallback
+    const center = extras.center || extras.vertex || {x:0, y:0}; 
+    const vecs = extras.vecs || [[1,0],[0,1]]; 
 
     if (extras.isDegenerate) {
         title = "3D-модель: Циліндр";
@@ -614,12 +785,10 @@ async function plot3DView(analysis) {
     await Plotly.react('graphCanvas', data, layout3D, {responsive: true});
 }
 
-
 // --- ДОПОМІЖНІ ФУНКЦІЇ ---
 
-// ОНОВЛЕНО: displayAnalysis тепер показує дотичну
 function displayAnalysis(analysis) {
-    // ... (код displayAnalysis без змін, як у попередній версії) ...
+    if (!analysis) return;
     const { type, extras, parsed } = analysis;
     const f = n => (n === undefined || n === null || isNaN(n)) ? 'N/A' : n.toFixed(2);
     let html = `<div><strong>Тип:</strong> ${type.toUpperCase()}`;
@@ -650,8 +819,16 @@ function displayAnalysis(analysis) {
 
     if (window.lastTangentInfo) {
         const pt = window.lastTangentInfo.point;
+        let ptLabel = `(${f(pt.x)}, ${f(pt.y)})`;
+        if (window.lastTangentInfo === window.defaultTangentInfo && !window.isTangentModeActive) {
+             ptLabel += ' (стандартна точка)';
+        } else if (window.isTangentModeActive && window.lastTangentInfo !== window.defaultTangentInfo) {
+             ptLabel += ' (обрана точка)';
+        }
+        
         html += `<hr style="border-top: 1px solid rgba(128,128,128,0.2); margin: 8px 0;">`;
-        html += `<div><strong>Дотична в точці (${f(pt.x)}, ${f(pt.y)}):</strong><br> ${window.lastTangentInfo.eqStr}</div>`;
+        // ВИКОРИСТОВУЄМО СПРОЩЕНЕ РІВНЯННЯ
+        html += `<div><strong>Рівняння дотичної:</strong><br> ${window.lastTangentInfo.eqStr}<br>у точці ${ptLabel}</div>`;
     }
 
     if ($('solveOutput')) $('solveOutput').innerHTML = html;
@@ -660,8 +837,7 @@ function displayAnalysis(analysis) {
 }
 
 function getExtrasTraces(analysis, range) {
-    // ... (код getExtrasTraces без змін) ...
-     const traces = [], { extras, type } = analysis;
+    const traces = [], { extras, type } = analysis;
     if (!extras || extras.isDegenerate) return [];
 
     const center = extras.center || extras.vertex;
@@ -725,7 +901,6 @@ function getExtrasTraces(analysis, range) {
 
 
 function buildGrid(A,B,C,D,E,F, range, N){
-    // ... (код buildGrid без змін) ...
      const x = Array.from({length: N}, (_, i) => -range + 2*range*i/(N-1));
     const y = [...x];
     const z = y.map(yi => x.map(xi => Math.fround(A*xi*xi + B*xi*yi + C*yi*yi + D*xi + E*yi + F)));
@@ -733,7 +908,6 @@ function buildGrid(A,B,C,D,E,F, range, N){
 }
 
 function estimateRangeForPlot(parsed, extras){
-    // ... (код estimateRangeForPlot без змін) ...
      let r = 8;
     const coeffs = [parsed.A, parsed.B, parsed.C, parsed.D, parsed.E, parsed.F].map(Math.abs).filter(c => c > 1e-6);
     if (coeffs.length > 0) {
@@ -749,7 +923,6 @@ function estimateRangeForPlot(parsed, extras){
 }
 
 function getLayout(range){
-    // ... (код getLayout без змін) ...
     const isLight = document.body.classList.contains('theme-light');
     const axisColor = isLight ? '#333' : '#9aa4ad';
     const gridColor = isLight ? '#eee' : 'rgba(255,255,255,0.08)';
@@ -773,11 +946,12 @@ function getLayout(range){
 
 
 function loadEquationFromURLOrStorage() {
-    // ... (код loadEquationFromURLOrStorage без змін) ...
-     const eqInput = $('equationInput');
-    if (!eqInput) return;
+    const eqInput = $('equationInput');
+    if (!eqInput) return; // Тільки для index.html
+    
     const urlParams = new URLSearchParams(window.location.search);
     const eqFromUrl = urlParams.get('eq');
+    
     if (eqFromUrl) {
         eqInput.value = decodeURIComponent(eqFromUrl);
     } else {
@@ -786,6 +960,7 @@ function loadEquationFromURLOrStorage() {
             eqInput.value = lastEq;
         }
     }
+    
     syncCoeffBoxes();
     if (eqInput.value) {
         analyzeAndPlot();
@@ -793,17 +968,24 @@ function loadEquationFromURLOrStorage() {
 }
 
 function shareEquation() {
-    // ... (код shareEquation без змін) ...
-    syncEquationInput();
+    if ($('coeff-A')) {
+        syncEquationInput();
+    }
+    
     const eq = $('equationInput').value.trim();
     if (!eq) { alert("Введіть рівняння, щоб поділитися ним."); return; }
+    
     const encodedEq = encodeURIComponent(eq);
-    const url = `${window.location.origin}${window.location.pathname}?eq=${encodedEq}`;
-    navigator.clipboard.writeText(url).then(() => { alert("Посилання скопійовано в буфер обміну!"); }, () => { alert("Не вдалося скопіювати посилання."); });
+    const url = `${window.location.origin}${window.location.pathname.replace('canonical.html', 'index.html')}?eq=${encodedEq}`;
+    
+    navigator.clipboard.writeText(url).then(() => { 
+        alert("Посилання скопійовано в буфер обміну!"); 
+    }, () => { 
+        alert("Не вдалося скопіювати посилання."); 
+    });
 }
 
 function setupDragAndDrop() {
-    // ... (код setupDragAndDrop без змін) ...
      const trashCan = $('trashCan'), exampleList = $('exampleList');
     if (!trashCan || !exampleList) return;
     let draggedIndex = null;
@@ -817,7 +999,6 @@ function setupDragAndDrop() {
 }
 
 function renderExampleList() {
-    // ... (код renderExampleList без змін) ...
     const eqInput = $('equationInput');
     const node = $('exampleList');
     if (!node) return;
@@ -838,7 +1019,6 @@ function renderExampleList() {
 }
 
 function openLibraryModal() {
-    // ... (код openLibraryModal без змін) ...
      const eqInput = $('equationInput');
     const modal = $('libraryModal'), content = $('libraryContent');
     if (!modal || !content) return;
@@ -855,7 +1035,7 @@ function openLibraryModal() {
             btn.innerHTML = `<strong>${item.name}:</strong><br>${item.eq}`;
             btn.onclick = () => {
                 eqInput.value = item.eq;
-                syncCoeffBoxes();
+                if ($('coeff-A')) syncCoeffBoxes(); // Синхронізуємо, лише якщо ми на index.html
                 closeLibraryModal();
                 analyzeAndPlot();
             };
@@ -867,7 +1047,6 @@ function openLibraryModal() {
 }
 
 function closeLibraryModal() {
-    // ... (код closeLibraryModal без змін) ...
      const modal = $('libraryModal');
     if (modal) modal.classList.add('hidden');
 }

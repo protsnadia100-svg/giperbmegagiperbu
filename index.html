@@ -92,6 +92,40 @@
              <button id="toggle3DBtn" class="btn creative">3D</button>
              <button id="locusAnimationBtn" class="btn creative">Анімація</button>
         </div>
+        
+        <div id="manualTangentContainer" class="manual-tangent-container hidden">
+            
+            <div class="tangent-tool-group">
+              <label>1. Знайти дотичну в точці (x₀, y₀)</label>
+              <div class="controls-row">
+                <input id="tangent-x" type="number" placeholder="x₀" class="coeff-input">
+                <input id="tangent-y" type="number" placeholder="y₀" class="coeff-input">
+                <button id="findTangentAtPointBtn" class="btn subtle">Знайти</button>
+              </div>
+            </div>
+
+            <div class="tangent-tool-group">
+              <label>2. Задати за рівнянням ($$Ax + By + C = 0$$)</label>
+              <div class="coeff-grid-3">
+                <div class="coeff-group">
+                  <label for="tangent-A">A (x)</label>
+                  <input id="tangent-A" type="number" placeholder="A">
+                </div>
+                <div class="coeff-group">
+                  <label for="tangent-B">B (y)</label>
+                  <input id="tangent-B" type="number" placeholder="B">
+                </div>
+                <div class="coeff-group">
+                  <label for="tangent-C">C (стала)</label>
+                  <input id="tangent-C" type="number" placeholder="C">
+                </div>
+              </div>
+              <div class="controls-row">
+                  <button id="plotManualTangentBtn" class="btn subtle">Побудувати</button>
+              </div>
+            </div>
+
+        </div>
 
         <div id="exampleList" class="example-list"></div>
         <div id="trashCan" class="trash-can">🗑️</div>

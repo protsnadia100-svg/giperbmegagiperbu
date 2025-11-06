@@ -1,5 +1,6 @@
 /* solver.js
     - parseGeneralEquation(input) -> {A,B,C,D,E,F}
+    - parseLinearEquation(input) -> {A,B,C} 
     - analyzeGeneral(parsed) -> { parsed, extras, type, disc }
     - canonicalToXY(center, vecs, u, v)
     - directrixSegments(center, vecs, a, c, range)
@@ -7,7 +8,10 @@
     - parabolaDirectrixSegment(vertex, axisVec, focal_dist, range)
     - getSteps(parsed, analysis) -> string
     - examples (localStorage)
-    - ОНОВЛЕНО: Додано getTangentLineAtPoint та getFocalChordIntersections
+    - getTangentLineAtPoint(parsed, point)
+    - calculateDefaultTangent(parsed, analysis)
+    - getFocalChordIntersections(parsed, focus, pointOnCurve)
+    - ОНОВЛЕНО: Додано getSimplifiedTangentEqString
 */
 
 (function() {
@@ -23,96 +27,43 @@
     }
     const examples = loadExamples();
     function persistExamples() { try { localStorage.setItem(EXAMPLES_KEY, JSON.stringify(examples)); } catch (e) {} }
-
-    /*
-     * ОНОВЛЕНИЙ НАДІЙНИЙ ПАРСЕР РІВНЯННЯ
-     */
-    function parseGeneralEquation(input) {
-        if (!input || typeof input !== 'string') return null;
-        
-        let s = input.replace(/\s+/g, '').replace(/–|−/g, '-');
-        
-        if (s.includes('=')) {
-            const parts = s.split('=');
-            if (parts.length !== 2) return null; // Некоректне рівняння
-            const lhs = parts[0];
-            const rhs = parts[1];
-            // Переносимо все вліво: (lhs) - (rhs) = 0
-            s = `(${lhs})-(${rhs})`;
-        }
-
-        // Перетворюємо дроби типу x^2/9 на (1/9)*x^2
-        s = s.replace(/([+-]?(?:x\^2|y\^2|xy|x|y))\/(\d+\.?\d*)/g, (match, variable, den) => {
-             // Обробка знаку
-             let sign = '';
-             if (variable.startsWith('+')) {
-                 sign = '+';
-                 variable = variable.substring(1);
-             } else if (variable.startsWith('-')) {
-                 sign = '-';
-                 variable = variable.substring(1);
-             }
-             sign = sign || '+'; // За замовчуванням +
-             return `${sign}(1/${den})*${variable}`;
-        });
-        
-        // Регулярний вираз для знаходження всіх доданків
-        const termRegex = /([+-]?(?:\([^)]+\)|(?:\d*\.\d+|\d+))?)?\*?(x\^2|y\^2|xy|x|y)/g;
-        
-        if (!s.startsWith('+') && !s.startsWith('-')) {
-            s = '+' + s;
-        }
-
-        let A = 0, B = 0, C = 0, D = 0, E = 0, F = 0;
-        let match;
-        
-        // Видаляємо знайдені доданки, щоб знайти константу F
-        let remainingStr = s;
-
-        while ((match = termRegex.exec(s)) !== null) {
-            remainingStr = remainingStr.replace(match[0], ''); // Видаляємо доданок зі строки
-
-            let coeffStr = match[1]; // Коефіцієнт (може бути undefined, +, -, число, (дріб))
-            let variable = match[2]; // Змінна (x^2, y^2, xy, x, y)
-            let coeff;
-
-            if (coeffStr === undefined || coeffStr === '+') {
-                coeff = 1.0;
-            } else if (coeffStr === '-') {
-                coeff = -1.0;
-            } else {
-                coeff = parseNumberExpression(coeffStr);
-            }
-
-            if (variable === 'x^2') A += coeff;
-            else if (variable === 'y^2') C += coeff;
-            else if (variable === 'xy') B += coeff;
-            else if (variable === 'x') D += coeff;
-            else if (variable === 'y') E += coeff;
-        }
-        
-        // Обробка константи F
-        // Все, що залишилось (і не є '=0'), - це F
-        remainingStr = remainingStr.replace(/=0$/, '').trim();
-        if (remainingStr) {
-             // Використобуємо parseNumberExpression для обробки складних виразів типу -(...)
-             // Потрібно додати +, якщо його немає
-             if (!remainingStr.startsWith('+') && !remainingStr.startsWith('-')) {
-                 remainingStr = '+' + remainingStr;
-             }
-             // Розбиваємо на доданки (на випадок F = 5 - 3)
-             const constantMatches = remainingStr.match(/[+-](?:\([^)]+\)|(?:\d*\.\d+|\d+))/g);
-             if (constantMatches) {
-                 constantMatches.forEach(c => F += parseNumberExpression(c));
-             }
-        }
-
-        return { A, B, C, D, E, F };
+    
+    // --- ДОПОМІЖНА МАТЕМАТИКА ДЛЯ СПРОЩЕННЯ ---
+    
+    // Знаходить НСД за алгоритмом Евкліда
+    function gcd(a, b) {
+        return b ? gcd(b, a % b) : a;
     }
 
+    // Знаходить НСД для трьох чисел
+    function gcd3(a, b, c) {
+        return gcd(a, gcd(b, c));
+    }
+    
+    // Перетворює число з плаваючою точкою в його дробове представлення (для спрощення)
+    function floatToFraction(floatVal, tolerance = 1e-6) {
+        let sign = floatVal < 0 ? -1 : 1;
+        let val = Math.abs(floatVal);
+        
+        let multiplier = 1;
+        while (Math.abs(val * multiplier - Math.round(val * multiplier)) > tolerance) {
+            multiplier *= 10;
+            if (multiplier > 1000000) break; // Обмеження, щоб уникнути нескінченних циклів
+        }
 
-    // --- ВИПРАВЛЕНА ФУНКЦІЯ ---
-    // Допоміжна функція для обчислення значення коефіцієнта
+        let numerator = Math.round(val * multiplier);
+        let denominator = multiplier;
+        
+        let common = gcd(numerator, denominator);
+        
+        return { num: sign * (numerator / common), den: denominator / common };
+    }
+    
+    // --- ФУНКЦІЇ ПАРСЕРА ---
+
+    /**
+     * Допоміжна функція для обчислення значення коефіцієнта (ПІДТРИМКА ДРОБІВ)
+     */
     function parseNumberExpression(str) {
         str = (str || '').trim();
         if (str === '' || str === '+') return 1;
@@ -143,7 +94,168 @@
         const v = parseFloat(str);
         return sign * (Number.isFinite(v) ? v : 0);
     }
-    // --- КІНЕЦЬ ВИПРАВЛЕНОЇ ФУНКЦІЇ ---
+    
+    /*
+     * Парсер загального рівняння
+     */
+    function parseGeneralEquation(input) {
+        if (!input || typeof input !== 'string') return null;
+        
+        let s = input.replace(/\s+/g, '').replace(/–|−/g, '-');
+        
+        if (s.includes('=')) {
+            const parts = s.split('=');
+            if (parts.length !== 2) return null; 
+            const lhs = parts[0];
+            const rhs = parts[1];
+            s = `(${lhs})-(${rhs})`;
+        }
+
+        s = s.replace(/([+-]?(?:x\^2|y\^2|xy|x|y))\/(\d+\.?\d*)/g, (match, variable, den) => {
+             let sign = '';
+             if (variable.startsWith('+')) {
+                 sign = '+';
+                 variable = variable.substring(1);
+             } else if (variable.startsWith('-')) {
+                 sign = '-';
+                 variable = variable.substring(1);
+             }
+             sign = sign || '+';
+             return `${sign}(1/${den})*${variable}`;
+        });
+        
+        const termRegex = /([+-]?(?:\([^)]+\)|(?:\d*\.\d+|\d+))?)?\*?(x\^2|y\^2|xy|x|y)/g;
+        
+        if (!s.startsWith('+') && !s.startsWith('-')) {
+            s = '+' + s;
+        }
+
+        let A = 0, B = 0, C = 0, D = 0, E = 0, F = 0;
+        let match;
+        
+        let remainingStr = s;
+
+        while ((match = termRegex.exec(s)) !== null) {
+            remainingStr = remainingStr.replace(match[0], ''); 
+
+            let coeffStr = match[1]; 
+            let variable = match[2]; 
+            let coeff;
+
+            if (coeffStr === undefined || coeffStr === '+') {
+                coeff = 1.0;
+            } else if (coeffStr === '-') {
+                coeff = -1.0;
+            } else {
+                coeff = parseNumberExpression(coeffStr);
+            }
+
+            if (variable === 'x^2') A += coeff;
+            else if (variable === 'y^2') C += coeff;
+            else if (variable === 'xy') B += coeff;
+            else if (variable === 'x') D += coeff;
+            else if (variable === 'y') E += coeff;
+        }
+        
+        remainingStr = remainingStr.replace(/=0$/, '').trim();
+        if (remainingStr) {
+             if (!remainingStr.startsWith('+') && !remainingStr.startsWith('-')) {
+                 remainingStr = '+' + remainingStr;
+             }
+             const constantMatches = remainingStr.match(/[+-](?:\([^)]+\)|(?:\d*\.\d+|\d+))/g);
+             if (constantMatches) {
+                 constantMatches.forEach(c => F += parseNumberExpression(c));
+             }
+        }
+
+        return { A, B, C, D, E, F };
+    }
+    
+    /**
+     * Спрощений парсер для лінійних рівнянь (Ax + By + C = 0)
+     */
+    function parseLinearEquation(input) {
+        if (!input || typeof input !== 'string') return null;
+        
+        let s = input.replace(/\s+/g, '').replace(/–|−/g, '-');
+        
+        if (s.includes('=')) {
+            const parts = s.split('=');
+            if (parts.length !== 2) return null;
+            s = `(${parts[0]})-(${parts[1]})`;
+        }
+
+        const termRegex = /([+-]?(?:\([^)]+\)|(?:\d*\.\d+|\d+))?)?\*?(x|y)/g;
+        
+        if (!s.startsWith('+') && !s.startsWith('-')) {
+            s = '+' + s;
+        }
+
+        let A = 0, B = 0, C = 0;
+        let match;
+        let remainingStr = s;
+
+        while ((match = termRegex.exec(s)) !== null) {
+            remainingStr = remainingStr.replace(match[0], ''); 
+            
+            let coeffStr = match[1];
+            let variable = match[2];
+            let coeff;
+
+            if (coeffStr === undefined || coeffStr === '+') coeff = 1.0;
+            else if (coeffStr === '-') coeff = -1.0;
+            else coeff = parseNumberExpression(coeffStr);
+
+            if (variable === 'x') A += coeff;
+            else if (variable === 'y') B += coeff;
+        }
+        
+        // Решта - це C
+        remainingStr = remainingStr.replace(/=0$/, '').trim();
+        if (remainingStr) {
+             if (!remainingStr.startsWith('+') && !remainingStr.startsWith('-')) {
+                 remainingStr = '+' + remainingStr;
+             }
+             const constantMatches = remainingStr.match(/[+-](?:\([^)]+\)|(?:\d*\.\d+|\d+))/g);
+             if (constantMatches) {
+                 constantMatches.forEach(cVal => C += parseNumberExpression(cVal));
+             }
+        }
+        
+        if (Math.abs(A) < 1e-9 && Math.abs(B) < 1e-9) return null; 
+
+        return { A, B, C }; 
+    }
+    
+    /**
+     * Перетворює об'єкт {A,B,C,D,E,F} на рядок рівняння (для canonical.js)
+     */
+    function parsedToEquationString(parsed) {
+        const { A, B, C, D, E, F } = parsed;
+        
+        let eq = '';
+        const addTerm = (coeff, term) => {
+            if (Math.abs(coeff) < 1e-9) return '';
+            let sign = coeff > 0 ? ' + ' : ' - ';
+            let val = Math.abs(coeff);
+            if (eq === '') sign = (coeff > 0 ? '' : '-');
+            
+            let valStr = Math.abs(coeff) === 1 && term !== '' ? '' : Math.abs(coeff).toFixed(5).replace(/\.?0+$/, '');
+            
+            return `${sign}${valStr}${term}`;
+        };
+
+        eq += addTerm(A, 'x^2');
+        eq += addTerm(B, 'xy');
+        eq += addTerm(C, 'y^2');
+        eq += addTerm(D, 'x');
+        eq += addTerm(E, 'y');
+        eq += addTerm(F, '');
+
+        if (eq.length > 0) eq = eq.trimStart().replace(/^\+ /, '') + ' = 0';
+
+        return eq.trim();
+    }
 
 
     /* --- Лінійна алгебра --- */
@@ -203,7 +315,7 @@
             const main_idx = Math.abs(eig.vals[0]) > 1e-9 ? 0 : 1, axis_idx = 1 - main_idx;
             const lambda = eig.vals[main_idx], v_main = eig.vecs[main_idx], v_axis = eig.vecs[axis_idx];
             const D_prime = D * v_main[0] + E * v_main[1], E_prime = D * v_axis[0] + E * v_axis[1];
-            if (Math.abs(E_prime) < 1e-9) { Object.assign(extras, { vecs: eig.vecs, isDegenerate: true, v_axis: v_axis, vertex: {x:0, y:0} }); } // Додано v_axis і vertex
+            if (Math.abs(E_prime) < 1e-9) { Object.assign(extras, { vecs: eig.vecs, isDegenerate: true, v_axis: v_axis, vertex: {x:0, y:0} }); } 
             else {
                 const x_v_prime = -D_prime / (2 * lambda), y_v_prime = (D_prime**2 - 4 * lambda * F) / (4 * lambda * E_prime);
                 const focal_dist = -E_prime / (2 * lambda) / 2;
@@ -220,7 +332,6 @@
      * Формує текстовий опис кроків розв'язання
      */
     function getSteps(parsed, analysis) {
-        // ... (код getSteps без змін) ...
         const { A, B, C, D, E, F } = parsed;
         const { type, disc, extras } = analysis;
         const steps = [];
@@ -282,7 +393,7 @@
 
     // Генерує відрізок для директриси параболи
     function parabolaDirectrixSegment(vertex, axisVec, focal_dist, range) {
-        if (!vertex || !axisVec || !focal_dist) return { xs:[], ys:[] }; // Додано перевірку
+        if (!vertex || !axisVec || !focal_dist) return { xs:[], ys:[] }; 
         const dx = vertex.x - focal_dist * axisVec[0], dy = vertex.y - focal_dist * axisVec[1];
         const dirVec = [-axisVec[1], axisVec[0]];
         const x1 = dx - range * dirVec[0], y1 = dy - range * dirVec[1];
@@ -290,15 +401,72 @@
         return { xs: [x1, x2], ys: [y1, y2] };
     }
     
-    // --- ПОЧАТОК НОВИХ ФУНКЦІЙ ---
+    /**
+     * Розраховує спрощене рівняння дотичної у цілих числах.
+     * @param {number} Fx - коефіцієнт при x
+     * @param {number} Fy - коефіцієнт при y
+     * @param {number} c_const - вільний член
+     * @returns {string} Спрощене рівняння у форматі Ax + By + C = 0
+     */
+    function getSimplifiedTangentEqString(Fx, Fy, c_const) {
+        // 1. Конвертуємо коефіцієнти у дроби (чисельник/знаменник)
+        const fr_x = floatToFraction(Fx);
+        const fr_y = floatToFraction(Fy);
+        const fr_c = floatToFraction(c_const);
+
+        // 2. Знаходимо найменше спільне кратне (НСК) для знаменників
+        let lcm = (fr_x.den * fr_y.den) / gcd(fr_x.den, fr_y.den);
+        lcm = (lcm * fr_c.den) / gcd(lcm, fr_c.den);
+        
+        // 3. Множимо всі чисельники на НСК, щоб отримати цілі числа
+        let int_Fx = Math.round(fr_x.num * (lcm / fr_x.den));
+        let int_Fy = Math.round(fr_y.num * (lcm / fr_y.den));
+        let int_c = Math.round(fr_c.num * (lcm / fr_c.den));
+
+        // 4. Знаходимо НСД для спрощення цілих чисел
+        let commonDivisor = gcd3(Math.abs(int_Fx), Math.abs(int_Fy), Math.abs(int_c));
+        
+        if (commonDivisor === 0) {
+            commonDivisor = 1; 
+        }
+
+        int_Fx /= commonDivisor;
+        int_Fy /= commonDivisor;
+        int_c /= commonDivisor;
+        
+        // 5. Визначаємо, яким повинен бути головний знак (коефіцієнт при x має бути додатним)
+        if (int_Fx < 0) {
+            int_Fx *= -1;
+            int_Fy *= -1;
+            int_c *= -1;
+        } else if (int_Fx === 0 && int_Fy < 0) { // Якщо вертикальна лінія
+             int_Fy *= -1;
+             int_c *= -1;
+        }
+
+        // 6. Формуємо остаточний рядок
+        let eqStr = '';
+        const addTerm = (coeff, term) => {
+            if (Math.abs(coeff) < 1e-9) return '';
+            let sign = coeff > 0 ? ' + ' : ' - ';
+            let val = Math.abs(coeff);
+            if (eqStr === '') sign = (coeff > 0 ? '' : '-'); // Перший термін
+            
+            let valStr = Math.abs(val - 1) < 1e-9 && term !== '' ? '' : Math.round(val);
+            
+            return `${sign}${valStr}${term}`;
+        };
+
+        eqStr += addTerm(int_Fx, 'x');
+        eqStr += addTerm(int_Fy, 'y');
+        eqStr += addTerm(int_c, '');
+        
+        return eqStr.trim().replace(/^\+ /, '') + ' = 0';
+    }
+
 
     /**
      * Знаходить рівняння дотичної до кривої в точці.
-     * F(x, y) = Ax^2 + Bxy + Cy^2 + Dx + Ey + F = 0
-     * Рівняння дотичної в (x₀, y₀):
-     * Fx(x₀, y₀)(x - x₀) + Fy(x₀, y₀)(y - y₀) = 0
-     * Fx = 2Ax + By + D
-     * Fy = Bx + 2Cy + E
      */
     function getTangentLineAtPoint(parsed, point) {
         const { A, B, C, D, E } = parsed;
@@ -309,82 +477,93 @@
         const Fy = B * x0 + 2 * C * y0 + E;
 
         if (Math.abs(Fx) < 1e-9 && Math.abs(Fy) < 1e-9) {
-            // Це особлива точка (можливо, центр або точка самоперетину)
             return null; 
         }
         
         // 2. Рівняння: Fx * x + Fy * y - (Fx*x₀ + Fy*y₀) = 0
-        // c = - (Fx*x₀ + Fy*y₀)
         const c_const = - (Fx * x0 + Fy * y0);
         
-        // 3. Формуємо рядок рівняння
-        let eqStr = '';
-        if (Math.abs(Fx) > 1e-6) eqStr += `${Fx.toFixed(2)}x `;
-        if (Math.abs(Fy) > 1e-6) eqStr += `${Fy > 0 ? '+' : ''} ${Fy.toFixed(2)}y `;
-        if (Math.abs(c_const) > 1e-6) eqStr += `${c_const > 0 ? '+' : ''} ${c_const.toFixed(2)} `;
-        eqStr = eqStr.trim().replace(/\+ -/g, '-') + ' = 0';
+        // 3. Формуємо спрощений рядок
+        const simplifiedEqStr = getSimplifiedTangentEqString(Fx, Fy, c_const);
 
-        return { Fx: Fx, Fy: Fy, c: c_const, eqStr: eqStr };
+        return { Fx: Fx, Fy: Fy, c: c_const, eqStr: simplifiedEqStr, point: point };
     }
 
     /**
+     * Розраховує дотичну в стандартній точці (вершина/точка на осі).
+     */
+    function calculateDefaultTangent(parsed, analysis) {
+        const { type, extras } = analysis;
+        let defaultPoint = null;
+
+        if (type === 'парабола') {
+            if (extras.vertex) {
+                defaultPoint = extras.vertex;
+            }
+        } else if (extras.center) {
+            let a = extras.a || 0;
+            let center = extras.center;
+            let mainVec = extras.vecs ? extras.vecs[0] : [1, 0];
+            
+            if (a > 1e-9) {
+                let x0 = center.x + a * mainVec[0];
+                let y0 = center.y + a * mainVec[1];
+                defaultPoint = { x: x0, y: y0 };
+            } else {
+                 defaultPoint = center;
+            }
+        } else {
+            const { A, B, C, D, E, F } = parsed;
+            const x0 = 0, y0 = 0;
+            if (A*x0*x0 + B*x0*y0 + C*y0*y0 + D*x0 + E*y0 + F < 1e-9) { 
+                 defaultPoint = {x: 0, y: 0};
+            }
+        }
+        
+        if (defaultPoint) {
+            const tangent = getTangentLineAtPoint(parsed, defaultPoint);
+            if (tangent) return tangent;
+        }
+
+        return null;
+    }
+    
+    /**
      * Знаходить точки перетину фокальної хорди з кривою.
-     * (Функція спрощена, може не працювати для всіх випадків)
      */
     function getFocalChordIntersections(parsed, focus, pointOnCurve) {
         const { A, B, C, D, E, F } = parsed;
         const [x0, y0] = focus;
         const [x1, y1] = pointOnCurve;
 
-        // 1. Знаходимо рівняння прямої (хорди), що проходить через фокус (x0, y0) і точку (x1, y1)
         const dx = x1 - x0, dy = y1 - y0;
 
-        // 2. Параметричне рівняння прямої: P(t) = focus + t * direction
-        // x = x0 + t*dx
-        // y = y0 + t*dy
-        
-        // 3. Підставляємо в F(x, y) = 0
-        // A(x0+t*dx)^2 + B(x0+t*dx)(y0+t*dy) + C(y0+t*dy)^2 + D(x0+t*dx) + E(y0+t*dy) + F = 0
-        
-        // Збираємо коефіцієнти для квадратного рівняння відносно t: K2*t^2 + K1*t + K0 = 0
-        
-        // K2 (коефіцієнти при t^2)
         const K2 = A*dx*dx + B*dx*dy + C*dy*dy;
-        
-        // K1 (коефіцієнти при t)
         const K1 = 2*A*x0*dx + B*(x0*dy + y0*dx) + 2*C*y0*dy + D*dx + E*dy;
-        
-        // K0 (вільний член, F(x0, y0))
         const K0 = A*x0*x0 + B*x0*y0 + C*y0*y0 + D*x0 + E*y0 + F;
 
-        if (Math.abs(K2) < 1e-9) { // Це не квадратне рівняння (можливо, пряма)
+        if (Math.abs(K2) < 1e-9) { 
              if (Math.abs(K1) > 1e-9) {
                  const t = -K0 / K1;
                  return [pointOnCurve, [x0 + t*dx, y0 + t*dy]];
              }
-             return null; // Немає розв'язків
+             return null; 
         }
 
-        // 4. Розв'язуємо квадратне рівняння
         const discriminant = K1*K1 - 4*K2*K0;
-        if (discriminant < 0) return null; // Немає перетинів (помилка?)
+        if (discriminant < 0) return null; 
 
         const t1 = (-K1 + Math.sqrt(discriminant)) / (2 * K2);
         const t2 = (-K1 - Math.sqrt(discriminant)) / (2 * K2);
 
-        // 5. Знаходимо точки перетину
         const p1 = [x0 + t1*dx, y0 + t1*dy];
         const p2 = [x0 + t2*dx, y0 + t2*dy];
         
         return [p1, p2];
     }
     
-    // --- КІНЕЦЬ НОВИХ ФУНКЦІЙ ---
-
-
-    // ОНОВЛЕНА БІБЛІОТЕКА: Додано більше прикладів загального вигляду
+    // Бібліотека прикладів
     const equationLibrary = [
-        // ... (код equationLibrary без змін) ...
         {
             category: 'Гіпербола',
             equations: [
@@ -421,7 +600,10 @@
 
     // Експортуємо API модуля в глобальний об'єкт window
     window.Solver = { 
-        parseGeneralEquation, 
+        parseGeneralEquation,
+        parseLinearEquation, 
+        parseNumberExpression, 
+        parsedToEquationString, 
         analyzeGeneral, 
         getSteps, 
         canonicalToXY, 
@@ -432,8 +614,8 @@
         addExample: (eq) => { if (eq && eq.trim()) { examples.unshift(eq.trim()); persistExamples(); } }, 
         persistExamples, 
         equationLibrary,
-        // ДОДАНО НОВІ ФУНКЦІЇ:
         getTangentLineAtPoint,
-        getFocalChordIntersections
+        getFocalChordIntersections,
+        calculateDefaultTangent 
     };
 })();
