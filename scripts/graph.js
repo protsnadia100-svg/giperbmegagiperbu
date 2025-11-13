@@ -11,6 +11,7 @@
     - ОНОВЛЕНО: Покращено логіку відображення дотичної.
     - ОНОВЛЕНО: Додано відображення рівняння дотичної у блоці аналізу.
     - ОНОВЛЕНО: Підтримка введення дробів у полях коефіцієнтів.
+    - ЗМІНЕНО: Дотична та її інструменти з'являються ЛИШЕ після натискання кнопки "Дотична".
 */
 
 document.addEventListener('DOMContentLoaded', initUI);
@@ -200,6 +201,7 @@ function handleGraphUnhover() {
     }
 }
 
+// --- ЗМІНА: deactiveAllModes ---
 function deactivateAllModes() {
     if (window.isLocusAnimationActive) {
         LocusAnimator.stop();
@@ -220,16 +222,16 @@ function deactivateAllModes() {
 
     const graphDiv = $('graphCanvas');
     if (graphDiv.layout) { 
-        let shapes = [];
-        // Зберігаємо лише дотичну, ЯКЩО вона була (або дефолтна, або з кліку)
-        if (window.lastTangentInfo) {
-             shapes = (graphDiv.layout.shapes || []).filter(s => s.name === 'tangent-line' || s.name === 'tangent-point');
-        }
-        Plotly.relayout(graphDiv, { shapes: shapes }); 
+        // ЗМІНА: Повністю очищуємо всі дотичні та точки
+        Plotly.relayout(graphDiv, { shapes: [] }); 
     }
+
+    // ЗМІНА: Скидаємо останню дотичну
+    window.lastTangentInfo = null; 
 
     if (window.lastAnalysis) displayAnalysis(window.lastAnalysis);
 }
+// --- КІНЕЦЬ ЗМІНИ ---
 
 function toggleChordExplorer() {
     const willBeActive = !window.isChordExplorerActive;
@@ -239,29 +241,34 @@ function toggleChordExplorer() {
     $('exploreChordsBtn').classList.toggle('active', willBeActive);
 }
 
+// --- ЗМІНА: toggleTangentMode ---
 function toggleTangentMode() {
     const willBeActive = !window.isTangentModeActive;
     if (window.is3DViewActive && window.lastAnalysis) { plotAnalysis(window.lastAnalysis); }
-    deactivateAllModes();
+    deactivateAllModes(); // Це вже скине lastTangentInfo і очистить shapes
+    
     window.isTangentModeActive = willBeActive;
     $('tangentModeBtn').classList.toggle('active', willBeActive);
     
     if (!willBeActive) {
         // Режим ВИМКНЕНО
-        window.lastTangentInfo = window.defaultTangentInfo; // Повертаємо дефолтну дотичну
-        plotAnalysis(window.lastAnalysis); 
+        // lastTangentInfo ВЖЕ скинуто
+        // shapes ВЖЕ очищено
+        // manualTangentContainer ВЖЕ приховано
         $('tangentInfoDisplay').style.display = 'none';
-        $('manualTangentContainer').classList.add('hidden'); 
+        
     } else {
          // Режим УВІМКНЕНО
-         window.lastTangentInfo = null; // Скидаємо дотичну, чекаємо на клік або ввід
-         Plotly.relayout($('graphCanvas'), { shapes: [] }); // Очищуємо графік від дотичних
+         // lastTangentInfo ВЖЕ скинуто
+         // shapes ВЖЕ очищено
          $('tangentInfoDisplay').textContent = 'Натисніть на криву або задайте дотичну.';
          $('tangentInfoDisplay').style.display = 'block';
          $('manualTangentContainer').classList.remove('hidden'); 
     }
-    displayAnalysis(window.lastAnalysis);
+    // Перемальовуємо displayAnalysis, щоб прибрати/показати блок дотичної
+    displayAnalysis(window.lastAnalysis); 
 }
+// --- КІНЕЦЬ ЗМІНИ ---
 
 function toggle3DView() {
     const willBeActive = !window.is3DViewActive;
@@ -483,7 +490,7 @@ function plotTangentByEquation() {
 
     Plotly.relayout(graphDiv, { shapes: newShapes }).catch(e => console.error("Relayout error (manual tangent):", e));
 
-    window.lastTangentInfo = null; 
+    window.lastTangentInfo = null; // Це ручна дотична, не прив'язана до точки
     const simplifiedEq = Solver.getSimplifiedTangentEqString(Fx, Fy, c);
     $('tangentInfoDisplay').innerHTML = `<b>${simplifiedEq.replace(' = 0', '')}</b> (вручну)`;
     $('tangentInfoDisplay').style.display = 'block';
@@ -534,6 +541,7 @@ function findTangentAtPoint() {
 
 // --- ОСНОВНІ ФУНКЦІЇ АНАЛІЗУ ТА ПОБУДОВИ ---
 
+// --- ЗМІНА: analyzeAndPlot ---
 async function analyzeAndPlot() {
     window.lastTangentInfo = null;
     window.defaultTangentInfo = null; 
@@ -567,13 +575,15 @@ async function analyzeAndPlot() {
     const defaultTangent = Solver.calculateDefaultTangent(parsed, analysis);
     if (defaultTangent) {
         window.defaultTangentInfo = defaultTangent;
-        window.lastTangentInfo = defaultTangent; 
+        // ЗМІНА: НЕ ВСТАНОВЛЮЄМО lastTangentInfo, щоб не малювати одразу
+        // window.lastTangentInfo = defaultTangent; 
     }
 
     displayAnalysis(analysis);
     if (window.is3DViewActive) await plot3DView(analysis);
     else await plotAnalysis(analysis);
 }
+// --- КІНЕЦЬ ЗМІНИ ---
 
 function analyzeOnly() {
     window.lastTangentInfo = null;
@@ -596,13 +606,14 @@ function analyzeOnly() {
     const defaultTangent = Solver.calculateDefaultTangent(parsed, analysis);
     if (defaultTangent) {
         window.defaultTangentInfo = defaultTangent;
-        window.lastTangentInfo = defaultTangent;
+        // ЗМІНА: НЕ ВСТАНОВЛЮЄМО lastTangentInfo
+        // window.lastTangentInfo = defaultTangent;
     }
     
     displayAnalysis(analysis);
 }
 
-
+// --- ЗМІНА: plotAnalysis ---
 async function plotAnalysis(analysis) {
     if (!analysis) return; 
     if (window.is3DViewActive) deactivateAllModes();
@@ -641,8 +652,8 @@ async function plotAnalysis(analysis) {
     const layout = getLayout(viewRange);
     let shapes = [];
 
-    // Відновлюємо лінію дотичної (якщо вона не ручна)
-    if (window.lastTangentInfo && (window.isTangentModeActive || window.lastTangentInfo === window.defaultTangentInfo)) {
+    // ЗМІНА: Умова малювання дотичної - ТІЛЬКИ якщо режим активний
+    if (window.lastTangentInfo && window.isTangentModeActive) {
         const tangent = Solver.getTangentLineAtPoint(analysis.parsed, window.lastTangentInfo.point);
         if (tangent) {
             const { Fx, Fy, c } = tangent;
@@ -676,11 +687,14 @@ async function plotAnalysis(analysis) {
             }
         }
     }
+    // --- КІНЕЦЬ ЗМІНИ ---
+    
     layout.shapes = shapes;
 
     await Plotly.react('graphCanvas', data, layout, {responsive: true});
     setupGraphEventListeners(); 
 }
+// --- КІНЕЦЬ ЗМІНИ ---
 
 
 async function plot3DView(analysis) {
@@ -817,14 +831,13 @@ function displayAnalysis(analysis) {
     }
     if (canonicalHtml) html += `<div><strong>Канонічне рівняння:</strong>${canonicalHtml}</div>`;
 
-    if (window.lastTangentInfo) {
+    // ЗМІНА: Блок дотичної відображається ТІЛЬКИ якщо вона є І режим активний
+    if (window.lastTangentInfo && window.isTangentModeActive) {
         const pt = window.lastTangentInfo.point;
         let ptLabel = `(${f(pt.x)}, ${f(pt.y)})`;
-        if (window.lastTangentInfo === window.defaultTangentInfo && !window.isTangentModeActive) {
-             ptLabel += ' (стандартна точка)';
-        } else if (window.isTangentModeActive && window.lastTangentInfo !== window.defaultTangentInfo) {
-             ptLabel += ' (обрана точка)';
-        }
+        
+        // (Логіку для "стандартна точка" можна прибрати, оскільки ми більше її не показуємо за замовчуванням)
+        ptLabel += ' (обрана точка)';
         
         html += `<hr style="border-top: 1px solid rgba(128,128,128,0.2); margin: 8px 0;">`;
         // ВИКОРИСТОВУЄМО СПРОЩЕНЕ РІВНЯННЯ
@@ -835,6 +848,7 @@ function displayAnalysis(analysis) {
     if ($('stepsOutput')) $('stepsOutput').innerHTML = Solver.getSteps(parsed, analysis);
     if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
 }
+// --- КІНЕЦЬ ЗМІНИ ---
 
 function getExtrasTraces(analysis, range) {
     const traces = [], { extras, type } = analysis;

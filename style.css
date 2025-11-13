@@ -271,7 +271,11 @@ body.theme-light .modal-content {
   line-height: 1.4;
 }
 
-/* Сторінка канонічної побудови */
+/* ===============================================
+   СТИЛІ ДЛЯ ВКЛАДОК (TABS)
+=============================================== */
+
+/* Сторінка канонічної побудови ТА сторінка теорії */
 .tab-buttons {
   display: flex;
   margin-bottom: 15px;
@@ -299,6 +303,8 @@ body.theme-light .modal-content {
 }
 .tab-content.active {
   display: block;
+  /* Додаємо анімацію появи для контенту вкладок */
+  animation: fadeIn 0.5s ease-in-out;
 }
 .equation-preview {
   text-align: center;
@@ -334,6 +340,10 @@ body.theme-light .modal-content {
 .param-group.orientation-group {
   grid-column: 1 / -1; 
 }
+/* ===============================================
+   КІНЕЦЬ СТИЛІВ ДЛЯ ВКЛАДОК
+=============================================== */
+
 
 /* Сторінка вікторини */
 .quiz-page {
@@ -908,4 +918,72 @@ body.theme-light .manual-tangent-container {
 body.theme-light .tangent-tool-group .controls-row input {
   border-color: rgba(0, 0, 0, 0.15);
   background: rgba(0, 0, 0, 0.02);
+}
+
+/* ===============================================
+   СТИЛІ ДЛЯ ЗГОРТАННЯ ТЕОРІЇ (CANONICAL.HTML)
+=============================================== */
+
+.theory-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Відступ між блоками <details> */
+}
+
+.theory-block {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  background: rgba(0,0,0,0.1);
+  transition: background 0.2s;
+}
+
+.theory-block[open] {
+  background: rgba(0,0,0,0.05);
+}
+
+.theory-block summary {
+  padding: 12px 15px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  list-style: none; /* Прибираємо стандартний маркер */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.theory-block summary::after {
+  content: '▼';
+  font-size: 0.8rem;
+  transition: transform 0.2s;
+}
+
+.theory-block[open] summary::after {
+  transform: rotate(180deg);
+}
+
+.theory-block[open] summary {
+  color: var(--accent);
+}
+
+.theory-content {
+  padding: 0 15px 15px 15px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  line-height: 1.7;
+}
+
+.theory-content ul {
+  padding-left: 20px;
+}
+
+/* Світла тема */
+body.theme-light .theory-block {
+  border-color: rgba(0, 0, 0, 0.08);
+  background: rgba(0,0,0,0.02);
+}
+body.theme-light .theory-block[open] {
+  background: rgba(0,0,0,0.01);
+}
+body.theme-light .theory-content {
+  border-top-color: rgba(0, 0, 0, 0.08);
 }

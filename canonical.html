@@ -10,6 +10,12 @@
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
 <body>
+  
+  <audio id="background-music" loop autoplay>
+      <source src="music/canonica.m4a" type="audio/mp4">
+      Ваш браузер не підтримує аудіо-елемент.
+  </audio>
+
   <header class="topbar">
     <div class="brand">
       <div class="logo">Команда ГіперМега</div>
@@ -18,7 +24,7 @@
   <a id="nav-build" class="nav-link" href="index.html">Загальна побудова</a> <a id="nav-canonical" class="nav-link active" href="canonical.html">Канонічна побудова</a> <a id="nav-theory" class="nav-link" href="theory_math.html">Теорія</a>
   <a href="quiz.html" class="nav-link">Вікторина</a>
   <a href="tasks.html" class="nav-link">Задачі</a>
-  <a id="nav-theory" class="nav-link" href="theory_story.html">Наша історія</a>
+  <a id="nav-story" class="nav-link" href="theory_story.html">Наша історія</a>
 </nav>
     <div class="controls">
       <label class="theme-switch">
@@ -76,7 +82,7 @@
             <div class="param-group"><label>k (вершина y₀):</label><input id="parabola-k" type="number" value="0"></div>
             <div class="param-group orientation-group"><label>Орієнтація:</label>
               <select id="parabola-orientation">
-                <option value="horizontal-right" selected>Горизонтальна (вправо)</option>
+                <option value="horizontal" selected>Горизонтальна</option>
                 <option value="horizontal-left">Горизонтальна (вліво)</option>
                 <option value="vertical-up">Вертикальна (вгору)</option>
                 <option value="vertical-down">Вертикальна (вниз)</option>
@@ -103,26 +109,26 @@
             <div class="tangent-tool-group">
               <label>1. Знайти дотичну в точці (x₀, y₀)</label>
               <div class="controls-row">
-                <input id="tangent-x" type="number" placeholder="x₀" class="coeff-input">
-                <input id="tangent-y" type="number" placeholder="y₀" class="coeff-input">
+                <input id="tangent-x" type="text" placeholder="x₀" class="coeff-input">
+                <input id="tangent-y" type="text" placeholder="y₀" class="coeff-input">
                 <button id="findTangentAtPointBtn" class="btn subtle">Знайти</button>
               </div>
             </div>
 
             <div class="tangent-tool-group">
-              <label>2. Задати за рівнянням ($$Ax + By + C = 0$$)</label>
+              <label>2. Задати за рівнянням $$Ax + By + C = 0$$</label>
               <div class="coeff-grid-3">
                 <div class="coeff-group">
                   <label for="tangent-A">A (x)</label>
-                  <input id="tangent-A" type="number" placeholder="A">
+                  <input id="tangent-A" type="text" placeholder="A">
                 </div>
                 <div class="coeff-group">
                   <label for="tangent-B">B (y)</label>
-                  <input id="tangent-B" type="number" placeholder="B">
+                  <input id="tangent-B" type="text" placeholder="B">
                 </div>
                 <div class="coeff-group">
                   <label for="tangent-C">C (стала)</label>
-                  <input id="tangent-C" type="number" placeholder="C">
+                  <input id="tangent-C" type="text" placeholder="C">
                 </div>
               </div>
               <div class="controls-row">
@@ -167,5 +173,29 @@
 
   <script src="scripts/solver.js"></script>
   <script src="scripts/graph.js"></script> <script src="scripts/locus_animation.js"></script> <script src="scripts/canonical.js"></script>
-  <script src="scripts/theory.js"></script> </body>
+  <script src="scripts/theory.js"></script> 
+  <script>
+    // УНІФІКОВАНИЙ СКРИПТ АВТОВІДТВОРЕННЯ
+    document.addEventListener('DOMContentLoaded', () => {
+        const audio = document.getElementById('background-music');
+        if (audio) {
+            audio.volume = 0.05; 
+            let playPromise = audio.play();
+
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log("Автозапуск музики заблоковано. Очікуємо на клік...");
+                    const startAudioOnClick = () => {
+                        audio.play().catch(e => console.error("Не вдалося відтворити аудіо навіть після кліку:", e));
+                        document.body.removeEventListener('click', startAudioOnClick);
+                        document.body.removeEventListener('touchstart', startAudioOnClick);
+                    };
+                    document.body.addEventListener('click', startAudioOnClick);
+                    document.body.addEventListener('touchstart', startAudioOnClick);
+                });
+            }
+        }
+    });
+  </script>
+</body>
 </html>

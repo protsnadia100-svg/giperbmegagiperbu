@@ -11,6 +11,11 @@
 </head>
 <body>
 
+  <audio id="background-music" loop autoplay>
+      <source src="music/quiz.m4a" type="audio/mp4">
+      Ваш браузер не підтримує аудіо-елемент.
+  </audio>
+
   <div id="intro-overlay" class="quiz-overlay">
     <div class="intro-content">
       <h2>Лотерея Запитань</h2>
@@ -52,6 +57,7 @@
       <a id="nav-theory" class="nav-link" href="theory_math.html">Теорія</a>
       <a href="quiz.html" class="nav-link active">Вікторина</a>
       <a href="tasks.html" class="nav-link">Задачі</a>
+      <a id="nav-story" class="nav-link" href="theory_story.html">Наша історія</a>
     </nav>
     <div class="controls">
       <label class="theme-switch">
@@ -82,5 +88,28 @@
   
   <script src="scripts/theory.js"></script>
   <script src="scripts/quiz.js"></script> 
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const audio = document.getElementById('background-music');
+        if (audio) {
+            audio.volume = 0.05; // Стандартна гучність 20%
+            let playPromise = audio.play();
+
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log("Автозапуск музики заблоковано. Очікуємо на клік...");
+                    const startAudioOnClick = () => {
+                        audio.play().catch(e => console.error("Не вдалося відтворити аудіо навіть після кліку:", e));
+                        document.body.removeEventListener('click', startAudioOnClick);
+                        document.body.removeEventListener('touchstart', startAudioOnClick);
+                    };
+                    document.body.addEventListener('click', startAudioOnClick);
+                    document.body.addEventListener('touchstart', startAudioOnClick);
+                });
+            }
+        }
+    });
+  </script>
 </body>
 </html>

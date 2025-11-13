@@ -13,6 +13,12 @@
 
 </head>
 <body>
+  
+  <audio id="background-music" loop autoplay>
+      <source src="music/index.m4a" type="audio/mp4">
+      Ваш браузер не підтримує аудіо-елемент.
+  </audio>
+
   <header class="topbar">
     <div class="brand">
       <div class="logo">Команда Гіпермега</div>
@@ -25,7 +31,7 @@
   <a id="nav-theory" class="nav-link" href="theory_math.html">Теорія</a>
   <a href="quiz.html" class="nav-link">Вікторина</a>
   <a href="tasks.html" class="nav-link">Задачі</a>
-  <a id="nav-theory" class="nav-link" href="theory_story.html">Наша історія</a>
+  <a id="nav-story" class="nav-link" href="theory_story.html">Наша історія</a>
 </nav>
 
     <div class="controls">
@@ -44,27 +50,27 @@
         <div class="coeff-grid-3">
           <div class="coeff-group">
             <label for="coeff-A">A (x²)</label>
-            <input id="coeff-A" class="coeff-input" type="number" placeholder="A">
+            <input id="coeff-A" class="coeff-input" type="text" placeholder="A">
           </div>
           <div class="coeff-group">
             <label for="coeff-B">B (xy)</label>
-            <input id="coeff-B" class="coeff-input" type="number" placeholder="B">
+            <input id="coeff-B" class="coeff-input" type="text" placeholder="B">
           </div>
           <div class="coeff-group">
             <label for="coeff-C">C (y²)</label>
-            <input id="coeff-C" class="coeff-input" type="number" placeholder="C">
+            <input id="coeff-C" class="coeff-input" type="text" placeholder="C">
           </div>
           <div class="coeff-group">
             <label for="coeff-D">D (x)</label>
-            <input id="coeff-D" class="coeff-input" type="number" placeholder="D">
+            <input id="coeff-D" class="coeff-input" type="text" placeholder="D">
           </div>
           <div class="coeff-group">
             <label for="coeff-E">E (y)</label>
-            <input id="coeff-E" class="coeff-input" type="number" placeholder="E">
+            <input id="coeff-E" class="coeff-input" type="text" placeholder="E">
           </div>
           <div class="coeff-group">
             <label for="coeff-F">F (стала)</label>
-            <input id="coeff-F" class="coeff-input" type="number" placeholder="F">
+            <input id="coeff-F" class="coeff-input" type="text" placeholder="F">
           </div>
         </div>
 
@@ -99,26 +105,26 @@
             <div class="tangent-tool-group">
               <label>1. Знайти дотичну в точці (x₀, y₀)</label>
               <div class="controls-row">
-                <input id="tangent-x" type="number" placeholder="x₀" class="coeff-input">
-                <input id="tangent-y" type="number" placeholder="y₀" class="coeff-input">
+                <input id="tangent-x" type="text" placeholder="x₀" class="coeff-input">
+                <input id="tangent-y" type="text" placeholder="y₀" class="coeff-input">
                 <button id="findTangentAtPointBtn" class="btn subtle">Знайти</button>
               </div>
             </div>
 
             <div class="tangent-tool-group">
-              <label>2. Задати за рівнянням ($$Ax + By + C = 0$$)</label>
+              <label>2. Задати за рівнянням $$Ax + By + C = 0$$</label>
               <div class="coeff-grid-3">
                 <div class="coeff-group">
                   <label for="tangent-A">A (x)</label>
-                  <input id="tangent-A" type="number" placeholder="A">
+                  <input id="tangent-A" type="text" placeholder="A">
                 </div>
                 <div class="coeff-group">
                   <label for="tangent-B">B (y)</label>
-                  <input id="tangent-B" type="number" placeholder="B">
+                  <input id="tangent-B" type="text" placeholder="B">
                 </div>
                 <div class="coeff-group">
                   <label for="tangent-C">C (стала)</label>
-                  <input id="tangent-C" type="number" placeholder="C">
+                  <input id="tangent-C" type="text" placeholder="C">
                 </div>
               </div>
               <div class="controls-row">
@@ -145,7 +151,7 @@
       <div class="card theory-preview">
         <h3>Коротко про теорію</h3>
         <div id="theoryShort"></div>
-        <a href="theory.html" class="link">Докладніше →</a>
+        <a href="theory_math.html" class="link">Докладніше →</a>
       </div>
       
     </aside>
@@ -184,5 +190,28 @@
   <script src="scripts/solver.js"></script>
   <script src="scripts/graph.js"></script>
   <script src="scripts/locus_animation.js"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const audio = document.getElementById('background-music');
+        if (audio) {
+            audio.volume = 0.05; // Стандартна гучність 20%
+            let playPromise = audio.play();
+
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log("Автозапуск музики заблоковано. Очікуємо на клік...");
+                    const startAudioOnClick = () => {
+                        audio.play().catch(e => console.error("Не вдалося відтворити аудіо навіть після кліку:", e));
+                        document.body.removeEventListener('click', startAudioOnClick);
+                        document.body.removeEventListener('touchstart', startAudioOnClick);
+                    };
+                    document.body.addEventListener('click', startAudioOnClick);
+                    document.body.addEventListener('touchstart', startAudioOnClick);
+                });
+            }
+        }
+    });
+  </script>
 </body>
 </html>

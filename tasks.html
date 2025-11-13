@@ -9,18 +9,24 @@
   <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
+  
+  <audio id="background-music" loop autoplay>
+      <source src="music/task.m4a" type="audio/mp4">
+      Ваш браузер не підтримує аудіо-елемент.
+  </audio>
+
   <header class="topbar">
     <div class="brand">
       <div class="logo">Команда Гіпермега</div>
       <div class="subtitle">Криві другого порядку</div>
     </div>
     <nav class="nav">
-  <a id="nav-build" class="nav-link active" href="index.html">Загальна побудова</a>
+  <a id="nav-build" class="nav-link" href="index.html">Загальна побудова</a>
   <a id="nav-canonical" class="nav-link" href="canonical.html">Канонічна побудова</a>
-  <a id="nav-theory" class="nav-link" href="theory.html">Теорія</a>
+  <a id="nav-theory" class="nav-link" href="theory_math.html">Теорія</a>
   <a href="quiz.html" class="nav-link">Вікторина</a>
-  <a href="tasks.html" class="nav-link">Задачі</a>
-  <a id="nav-theory" class="nav-link" href="theory_story.html">Наша історія</a>
+  <a href="tasks.html" class="nav-link active">Задачі</a>
+  <a id="nav-story" class="nav-link" href="theory_story.html">Наша історія</a>
 </nav>
     <div class="controls">
       <label class="theme-switch">
@@ -162,7 +168,7 @@
           </div>
            <div class="task-plot-links">
             <strong>Побудувати результат:</strong>
-            <a href="canonical.html?canonical.html?type=hyperbola&a=5&b=12&h=0&k=0&orientation=horizontal" class="btn subtle">Канонічна</a>
+            <a href="canonical.html?canonical.html?type=hyperbola&a=60&b=80&h=0&k=0&orientation=horizontal" class="btn subtle">Канонічна</a>
             <a href="index.html?A=6400&B=0&C=-3600&D=0&E=0&F=-23040000" class="btn subtle">Загальна</a>
           </div>
           <button class="btn primary toggle-solution-btn">Показати розв'язання</button>
@@ -213,5 +219,28 @@
   
   <script src="scripts/theory.js"></script> 
   <script src="scripts/tasks.js"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const audio = document.getElementById('background-music');
+        if (audio) {
+            audio.volume = 0.05; // Стандартна гучність 20%
+            let playPromise = audio.play();
+
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log("Автозапуск музики заблоковано. Очікуємо на клік...");
+                    const startAudioOnClick = () => {
+                        audio.play().catch(e => console.error("Не вдалося відтворити аудіо навіть після кліку:", e));
+                        document.body.removeEventListener('click', startAudioOnClick);
+                        document.body.removeEventListener('touchstart', startAudioOnClick);
+                    };
+                    document.body.addEventListener('click', startAudioOnClick);
+                    document.body.addEventListener('touchstart', startAudioOnClick);
+                });
+            }
+        }
+    });
+  </script>
 </body>
 </html>
