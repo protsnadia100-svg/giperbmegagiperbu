@@ -13,7 +13,8 @@ document.addEventListener('DOMContentLoaded', ()=>{
   // small fade-in for content
   setTimeout(()=> document.body.style.opacity = 1, 60);
 
-  // --- 2. НОВА ЛОГІКА ДЛЯ ВКЛАДОК (TABS) ---
+  // --- 2. ЛОГІКА ДЛЯ ВКЛАДОК (TABS) ---
+  // (Цей код потрібен для theory_math.html, але не завадить тут)
   const tabButtons = document.querySelectorAll('.tab-btn');
   const tabContents = document.querySelectorAll('.tab-content');
 
@@ -21,29 +22,82 @@ document.addEventListener('DOMContentLoaded', ()=>{
       button.addEventListener('click', () => {
           const type = button.dataset.type;
           
-          // Оновлення кнопок
           tabButtons.forEach(btn => btn.classList.remove('active'));
           button.classList.add('active');
           
-          // Оновлення контенту
           tabContents.forEach(content => {
-              // Визначаємо ID контенту (напр., "theory-hyperbola")
               const contentId = `theory-${type}`; 
               content.classList.toggle('active', content.id === contentId);
           });
 
-          // === ОНОВЛЕННЯ: ПЕРЕ-РЕНДЕРИНГ MATHJAX ===
-          // Це потрібно, щоб формули відобразились у вкладці, яка щойно стала видимою
-          if (window.MathJax && MathJax.typesetPromise) {
-            MathJax.typesetPromise([document.getElementById(contentId)]);
+          if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
+            const el = document.getElementById(`theory-${type}`);
+            if (el) {
+                MathJax.typesetPromise([el]).catch((err) => console.log('MathJax re-render failed:', err));
+            }
           }
       });
   });
-
-  // --- 3. ПЕРВИННИЙ ЗАПУСК MATHJAX ---
-  // Запускаємо рендеринг для всієї сторінки при завантаженні
-  if (window.MathJax && MathJax.typesetPromise) {
+  
+  // --- 3. КОНФІГУРАЦІЯ MATHJAX (ЯКЩО ВОНА ТУТ ПОТРІБНА) ---
+  // (Цей код здебільшого для theory_math.html)
+  if (window.MathJax && !window.MathJax.startup) {
+      // Якщо конфігурація ще не завантажена
+      window.MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          displayMath: [['$$', '$$'], ['\\[', '\\]']]
+        },
+        startup: {
+          ready: () => {
+            console.log('MathJax is ready.');
+            MathJax.startup.defaultPageReady();
+          }
+        }
+      };
+  } else if (window.MathJax && typeof MathJax.typesetPromise === 'function') {
+      // Якщо MathJax вже тут, просто запускаємо
       MathJax.typesetPromise();
   }
 
+
+  // === 4. НОВА ЛОГІКА: ВИМКНЕННЯ МУЗИКИ ПРИ СТАРТІ ВІДЕО ===
+  
+  const audio = document.getElementById('background-music');
+  // Шукаємо всі відео з класом .story-video
+  const videos = document.querySelectorAll('.story-video'); 
+
+  if (audio && videos.length > 0) {
+    
+    videos.forEach(video => {
+      // Додаємо слухача події "play" (коли користувач натискає "плей")
+      video.addEventListener('play', () => {
+        // Якщо аудіо не на паузі, ставимо його на паузу
+        if (!audio.paused) {
+          audio.pause();
+        }
+      });
+
+      /*
+      // --- ОПЦІОНАЛЬНО ---
+      // Якщо ви хочете, щоб музика ВІДНОВИЛАСЬ,
+      // коли відео зупинили або воно закінчилось,
+      // розкоментуйте (приберіть //) цей код:
+
+      video.addEventListener('pause', () => {
+        if (audio.paused) {
+           audio.play().catch(e => console.log("Music resume failed"));
+        }
+      });
+      
+      video.addEventListener('ended', () => {
+         if (audio.paused) {
+           audio.play().catch(e => console.log("Music resume failed"));
+        }
+      });
+      */
+
+    });
+  }
+  
 });
