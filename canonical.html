@@ -3,28 +3,33 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ConicLab — Канонічна побудова</title> <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <title>ConicLab — Канонічна побудова</title>
+
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <link rel="stylesheet" href="style.css" />
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  
+
+  <!-- 🔥 ВИПРАВЛЕНИЙ MathJax -->
   <script>
     window.MathJax = {
       tex: {
+        packages: {'[+]': ['ams']},
         inlineMath: [['$', '$'], ['\\(', '\\)']],
-        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
       },
-      startup: {
-        ready: () => {
-          MathJax.startup.defaultPageReady();
-        }
-      }
+      options: { renderActions: { addMenu: [] } }
     };
   </script>
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script id="MathJax-script" async 
+          src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+  </script>
+
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
+
 <body>
-  
+
   <audio id="background-music" loop autoplay>
       <source src="music/canonica.m4a" type="audio/mp4">
       Ваш браузер не підтримує аудіо-елемент.
@@ -33,77 +38,105 @@
   <header class="topbar">
     <div class="brand">
       <div class="logo">Команда ГіперМега</div>
-      <div class="subtitle">Криві другого порядку</div> </div>
-<nav class="nav">
-  <a id="nav-build" class="nav-link" href="index.html">Загальна побудова</a> <a id="nav-canonical" class="nav-link active" href="canonical.html">Канонічна побудова</a> <a id="nav-theory" class="nav-link" href="theory_math.html">Теорія</a>
-  <a href="quiz.html" class="nav-link">Вікторина</a>
-  <a href="tasks.html" class="nav-link">Задачі</a>
-  <a id="nav-story" class="nav-link" href="theory_story.html">Наша історія</a>
-</nav>
+      <div class="subtitle">Криві другого порядку</div>
+    </div>
+
+    <nav class="nav">
+      <a id="nav-build" class="nav-link" href="index.html">Загальна побудова</a>
+      <a id="nav-canonical" class="nav-link active" href="canonical.html">Канонічна побудова</a>
+      <a id="nav-theory" class="nav-link" href="theory_math.html">Теорія</a>
+      <a href="quiz.html" class="nav-link">Вікторина</a>
+      <a href="tasks.html" class="nav-link">Задачі</a>
+      <a id="nav-story" class="nav-link" href="theory_story.html">Наша історія</a>
+    </nav>
+
     <div class="controls">
       <label class="theme-switch">
         <input id="themeToggle" type="checkbox" />
         <span class="slider"></span>
       </label>
     </div>
+
   </header>
 
   <main class="layout">
+
     <aside class="left-panel">
       <div class="card card-panel">
-        
-        <div id="ellipse-form" class="form-section">
+
+        <div class="tab-buttons">
+          <button class="tab-btn active" data-type="ellipse">Еліпс/Коло</button>
+          <button class="tab-btn" data-type="hyperbola">Гіпербола</button>
+          <button class="tab-btn" data-type="parabola">Парабола</button>
+        </div>
+
+        <!-- ✔ ЕЛІПС -->
+        <div id="ellipse-form" class="tab-content form-section active">
           <h3 class="form-title">Еліпс / Коло</h3>
-          <div class="equation-preview">$$ \frac{(x-h)^2}{a^2} + \frac{(y-k)^2}{b^2} = 1 $$</div>
+          <div class="equation-preview">
+            $$\frac{(x-h)^2}{a^2} + \frac{(y-k)^2}{b^2} = 1$$
+          </div>
+
           <div class="param-grid">
             <div class="param-group"><label>a (піввісь):</label><input id="ellipse-a" type="number" value="5"></div>
             <div class="param-group"><label>b (піввісь):</label><input id="ellipse-b" type="number" value="3"></div>
             <div class="param-group"><label>h (центр $x_0$):</label><input id="ellipse-h" type="number" value="0"></div>
             <div class="param-group"><label>k (центр $y_0$):</label><input id="ellipse-k" type="number" value="0"></div>
           </div>
+
           <div class="controls-row">
             <button id="buildEllipseBtn" class="btn primary">Побудувати Еліпс</button>
           </div>
         </div>
-        
-        <hr class="form-divider">
 
-        <div id="hyperbola-form" class="form-section">
+        <!-- ✔ ГІПЕРБОЛА -->
+        <div id="hyperbola-form" class="tab-content form-section">
           <h3 class="form-title">Гіпербола</h3>
-          <div class="equation-preview">$$ \frac{(x-h)^2}{a^2} - \frac{(y-k)^2}{b^2} = 1 $$</div>
-           <div class="param-grid">
+          <div class="equation-preview">
+            $$\frac{(x-h)^2}{a^2} - \frac{(y-k)^2}{b^2} = 1$$
+          </div>
+
+          <div class="param-grid">
             <div class="param-group"><label>a (піввісь):</label><input id="hyperbola-a" type="number" value="4"></div>
             <div class="param-group"><label>b (піввісь):</label><input id="hyperbola-b" type="number" value="3"></div>
             <div class="param-group"><label>h (центр $x_0$):</label><input id="hyperbola-h" type="number" value="0"></div>
             <div class="param-group"><label>k (центр $y_0$):</label><input id="hyperbola-k" type="number" value="0"></div>
-            <div class="param-group orientation-group"><label>Орієнтація:</label>
+
+            <div class="param-group orientation-group">
+              <label>Орієнтація:</label>
               <select id="hyperbola-orientation">
                 <option value="horizontal" selected>Горизонтальна</option>
                 <option value="vertical">Вертикальна</option>
               </select>
             </div>
           </div>
+
           <div class="controls-row" style="margin-top: 15px;">
             <button id="playHyperbolaSound" class="btn primary">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;"><path d="M8 5v14l11-7z"/></svg>
               Почути асимптоту (за $a$ і $b$)
             </button>
           </div>
+
           <div class="controls-row">
             <button id="buildHyperbolaBtn" class="btn primary">Побудувати Гіперболу</button>
           </div>
         </div>
 
-        <hr class="form-divider">
-        
-        <div id="parabola-form" class="form-section">
+        <!-- ✔ ПАРАБОЛА -->
+        <div id="parabola-form" class="tab-content form-section">
           <h3 class="form-title">Парабола</h3>
-          <div class="equation-preview">$$ (y-k)^2 = 4p(x-h) $$</div>
+          <div class="equation-preview">
+            $$(y-k)^2 = 4p(x-h)$$
+          </div>
+
           <div class="param-grid">
             <div class="param-group"><label>p (параметр):</label><input id="parabola-p" type="number" value="2"></div>
             <div class="param-group"><label>h (вершина $x_0$):</label><input id="parabola-h" type="number" value="0"></div>
             <div class="param-group"><label>k (вершина $y_0$):</label><input id="parabola-k" type="number" value="0"></div>
-            <div class="param-group orientation-group"><label>Орієнтація:</label>
+
+            <div class="param-group orientation-group">
+              <label>Орієнтація:</label>
               <select id="parabola-orientation">
                 <option value="horizontal" selected>Горизонтальна</option>
                 <option value="horizontal-left">Горизонтальна (вліво)</option>
@@ -112,24 +145,25 @@
               </select>
             </div>
           </div>
+
           <div class="controls-row">
             <button id="buildParabolaBtn" class="btn primary">Побудувати Параболу</button>
           </div>
         </div>
-        
-        <hr class="form-divider">
 
+        <!-- Інтерактив -->
         <div>
-          <h4 class="controls-group-title">Інтерактивні Режими (для побудованої кривої)</h4>
+          <h4 class="controls-group-title">Інтерактивні Режими</h4>
+
           <div class="controls-row creative-features">
-               <button id="exploreChordsBtn" class="btn creative">Хорди</button>
-               <button id="tangentModeBtn" class="btn creative">Дотична</button>
-               <button id="toggle3DBtn" class="btn creative">3D</button>
-               <button id="locusAnimationBtn" class="btn creative">Анімація</button>
+            <button id="exploreChordsBtn" class="btn creative">Хорди</button>
+            <button id="tangentModeBtn" class="btn creative">Дотична</button>
+            <button id="toggle3DBtn" class="btn creative">3D</button>
+            <button id="locusAnimationBtn" class="btn creative">Анімація</button>
           </div>
-          
+
           <div id="manualTangentContainer" class="manual-tangent-container hidden">
-            
+
             <div class="tangent-tool-group">
               <label>1. Знайти дотичну в точці ($x_0$, $y_0$)</label>
               <div class="controls-row">
@@ -141,6 +175,7 @@
 
             <div class="tangent-tool-group">
               <label>2. Задати за рівнянням $Ax + By + C = 0$</label>
+
               <div class="coeff-grid-3">
                 <div class="coeff-group">
                   <label for="tangent-A">A (x)</label>
@@ -155,64 +190,79 @@
                   <input id="tangent-C" type="text" placeholder="C">
                 </div>
               </div>
+
               <div class="controls-row">
-                  <button id="plotManualTangentBtn" class="btn subtle">Побудувати</button>
+                <button id="plotManualTangentBtn" class="btn subtle">Побудувати</button>
               </div>
             </div>
 
           </div>
-          
         </div>
-      </div> 
-      
+
+      </div>
+
       <div class="card info-panel">
         <h3>Результат</h3>
         <div id="solveOutput" class="result">Введіть параметри та натисніть "Побудувати".</div>
+
         <input id="equationInput" type="text" style="display: none;">
+
         <div class="controls-row small">
           <button id="stepsBtn" class="btn subtle">Кроки розв'язання</button>
         </div>
+
         <div id="stepsOutput" class="steps hidden"></div>
       </div>
+
     </aside>
 
+    <!-- ПРАВА ПАНЕЛЬ -->
     <section class="right-panel">
+
       <div id="graphContainer" class="graph-container">
           <div id="graphCanvas" class="graph-canvas"></div>
           <canvas id="animationCanvas" class="animation-canvas"></canvas>
           <div id="chordLengthDisplay" class="info-display"></div>
           <div id="tangentInfoDisplay" class="info-display"></div>
       </div>
+
       <div class="legend">
         <div><span class="legend-dot curve"></span> Крива</div>
-        <div><span class="legend-dot conjugate"></span> Спряжена</div> <div><span class="legend-dot focus"></span> Фокуси</div>
-        <div><span class="legend-dot surface-3d"></span> 3D-поверхня</div> <div><span class="legend-line directrix"></span> Директриси</div>
+        <div><span class="legend-dot conjugate"></span> Спряжена</div>
+        <div><span class="legend-dot focus"></span> Фокуси</div>
+        <div><span class="legend-dot surface-3d"></span> 3D-поверхня</div>
+        <div><span class="legend-line directrix"></span> Директриси</div>
         <div><span class="legend-line major-axis"></span> Головна вісь</div>
         <div><span class="legend-line minor-axis"></span> Побічна вісь</div>
         <div><span class="legend-line asymptote"></span> Асимптоти</div>
       </div>
+
     </section>
   </main>
 
   <footer class="footer">
-    <div>Команда Гіпермега • Криві другого порядку</div> </footer>
+    <div>Команда Гіпермега • Криві другого порядку</div>
+  </footer>
 
+  <!-- Скрипти -->
   <script src="scripts/solver.js"></script>
-  <script src="scripts/graph.js"></script> <script src="scripts/locus_animation.js"></script> <script src="scripts/canonical.js"></script>
-  <script src="scripts/theory.js"></script> 
+  <script src="scripts/graph.js"></script>
+  <script src="scripts/locus_animation.js"></script>
+  <script src="scripts/canonical.js"></script>
+
+  <!-- Музика -->
   <script>
-    // УНІФІКОВАНИЙ СКРИПТ АВТОВІДТВОРЕННЯ
     document.addEventListener('DOMContentLoaded', () => {
         const audio = document.getElementById('background-music');
         if (audio) {
-            audio.volume = 0.05; 
+            audio.volume = 0.05;
             let playPromise = audio.play();
 
             if (playPromise !== undefined) {
                 playPromise.catch(error => {
                     console.log("Автозапуск музики заблоковано. Очікуємо на клік...");
                     const startAudioOnClick = () => {
-                        audio.play().catch(e => console.error("Не вдалося відтворити аудіо навіть після кліку:", e));
+                        audio.play().catch(e => console.error("Не вдалося відтворити аудіо:", e));
                         document.body.removeEventListener('click', startAudioOnClick);
                         document.body.removeEventListener('touchstart', startAudioOnClick);
                     };
@@ -223,6 +273,6 @@
         }
     });
   </script>
+
 </body>
 </html>
-
