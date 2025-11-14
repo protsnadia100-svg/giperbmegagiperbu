@@ -3,41 +3,28 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ConicLab — Канонічна побудова</title>
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <title>ConicLab — Канонічна побудова</title> <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <link rel="stylesheet" href="style.css" />
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-
-  <!-- MathJax (очищений, одинарний, робочий) -->
-<script>
-  window.MathJax = {
-    tex: {
-      inlineMath: [['$', '$'], ['\(', '\)']],
-      displayMath: [['$$', '$$'], ['\[', '\]']],
-      processEscapes: true
-    },
-    chtml: {
-      matchFontHeight: false
-    },
-    svg: {
-      matchFontHeight: false
-    },
-    startup: {
-      typeset: true,
-      ready: () => {
-        MathJax.startup.defaultReady();
-        MathJax.typesetPromise();
+  
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+      },
+      startup: {
+        ready: () => {
+          MathJax.startup.defaultPageReady();
+        }
       }
-    }
-  };
-</script>
-<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
-<!-- END MathJax -->
-
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-
+  
   <audio id="background-music" loop autoplay>
       <source src="music/canonica.m4a" type="audio/mp4">
       Ваш браузер не підтримує аудіо-елемент.
@@ -46,18 +33,13 @@
   <header class="topbar">
     <div class="brand">
       <div class="logo">Команда ГіперМега</div>
-      <div class="subtitle">Криві другого порядку</div>
-    </div>
-
-    <nav class="nav">
-      <a id="nav-build" class="nav-link" href="index.html">Загальна побудова</a>
-      <a id="nav-canonical" class="nav-link active" href="canonical.html">Канонічна побудова</a>
-      <a id="nav-theory" class="nav-link" href="theory_math.html">Теорія</a>
-      <a href="quiz.html" class="nav-link">Вікторина</a>
-      <a href="tasks.html" class="nav-link">Задачі</a>
-      <a id="nav-story" class="nav-link" href="theory_story.html">Наша історія</a>
-    </nav>
-
+      <div class="subtitle">Криві другого порядку</div> </div>
+<nav class="nav">
+  <a id="nav-build" class="nav-link" href="index.html">Загальна побудова</a> <a id="nav-canonical" class="nav-link active" href="canonical.html">Канонічна побудова</a> <a id="nav-theory" class="nav-link" href="theory_math.html">Теорія</a>
+  <a href="quiz.html" class="nav-link">Вікторина</a>
+  <a href="tasks.html" class="nav-link">Задачі</a>
+  <a id="nav-story" class="nav-link" href="theory_story.html">Наша історія</a>
+</nav>
     <div class="controls">
       <label class="theme-switch">
         <input id="themeToggle" type="checkbox" />
@@ -69,39 +51,8 @@
   <main class="layout">
     <aside class="left-panel">
       <div class="card card-panel">
-
-        <!-- FORM SWITCHER BUTTONS -->
-<div class="formula-switcher">
-  <button class="formula-btn" data-target="ellipse-form">$$ \frac{(x-h)^2}{a^2} + \frac{(y-k)^2}{b^2} = 1 $$</button>
-  <button class="formula-btn" data-target="hyperbola-form">$$ \frac{(x-h)^2}{a^2} - \frac{(y-k)^2}{b^2} = 1 $$</button>
-  <button class="formula-btn" data-target="parabola-form">$$ (y-k)^2 = 4p(x-h) $$</button>
-</div>
-
-<style>
-  .formula-switcher { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-  .formula-btn { background: #ffffff22; border: 1px solid #888; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 18px; transition: 0.2s; }
-  .formula-btn:hover { background: #ffffff44; }
-  .form-section { display: none; }
-  .form-section.active { display: block; }
-</style>
-
-<script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const buttons = document.querySelectorAll('.formula-btn');
-    const sections = document.querySelectorAll('.form-section');
-    buttons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        sections.forEach(s => s.classList.remove('active'));
-        document.getElementById(btn.dataset.target).classList.add('active');
-        MathJax.typesetPromise();
-      });
-    });
-    document.getElementById('ellipse-form').classList.add('active');
-  });
-</script>
-
-<!-- SWITCHER INSERTED -->
-<div id="ellipse-form" class="form-section">
+        
+        <div id="ellipse-form" class="form-section">
           <h3 class="form-title">Еліпс / Коло</h3>
           <div class="equation-preview">$$ \frac{(x-h)^2}{a^2} + \frac{(y-k)^2}{b^2} = 1 $$</div>
           <div class="param-grid">
@@ -114,13 +65,13 @@
             <button id="buildEllipseBtn" class="btn primary">Побудувати Еліпс</button>
           </div>
         </div>
-
+        
         <hr class="form-divider">
 
         <div id="hyperbola-form" class="form-section">
           <h3 class="form-title">Гіпербола</h3>
           <div class="equation-preview">$$ \frac{(x-h)^2}{a^2} - \frac{(y-k)^2}{b^2} = 1 $$</div>
-          <div class="param-grid">
+           <div class="param-grid">
             <div class="param-group"><label>a (піввісь):</label><input id="hyperbola-a" type="number" value="4"></div>
             <div class="param-group"><label>b (піввісь):</label><input id="hyperbola-b" type="number" value="3"></div>
             <div class="param-group"><label>h (центр $x_0$):</label><input id="hyperbola-h" type="number" value="0"></div>
@@ -133,7 +84,10 @@
             </div>
           </div>
           <div class="controls-row" style="margin-top: 15px;">
-            <button id="playHyperbolaSound" class="btn primary">Почути асимптоту (за $a$ і $b$)</button>
+            <button id="playHyperbolaSound" class="btn primary">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 8px;"><path d="M8 5v14l11-7z"/></svg>
+              Почути асимптоту (за $a$ і $b$)
+            </button>
           </div>
           <div class="controls-row">
             <button id="buildHyperbolaBtn" class="btn primary">Побудувати Гіперболу</button>
@@ -141,7 +95,7 @@
         </div>
 
         <hr class="form-divider">
-
+        
         <div id="parabola-form" class="form-section">
           <h3 class="form-title">Парабола</h3>
           <div class="equation-preview">$$ (y-k)^2 = 4p(x-h) $$</div>
@@ -162,7 +116,7 @@
             <button id="buildParabolaBtn" class="btn primary">Побудувати Параболу</button>
           </div>
         </div>
-
+        
         <hr class="form-divider">
 
         <div>
@@ -173,9 +127,9 @@
                <button id="toggle3DBtn" class="btn creative">3D</button>
                <button id="locusAnimationBtn" class="btn creative">Анімація</button>
           </div>
-
+          
           <div id="manualTangentContainer" class="manual-tangent-container hidden">
-
+            
             <div class="tangent-tool-group">
               <label>1. Знайти дотичну в точці ($x_0$, $y_0$)</label>
               <div class="controls-row">
@@ -207,9 +161,10 @@
             </div>
 
           </div>
+          
         </div>
-      </div>
-
+      </div> 
+      
       <div class="card info-panel">
         <h3>Результат</h3>
         <div id="solveOutput" class="result">Введіть параметри та натисніть "Побудувати".</div>
@@ -230,10 +185,8 @@
       </div>
       <div class="legend">
         <div><span class="legend-dot curve"></span> Крива</div>
-        <div><span class="legend-dot conjugate"></span> Спряжена</div>
-        <div><span class="legend-dot focus"></span> Фокуси</div>
-        <div><span class="legend-dot surface-3d"></span> 3D-поверхня</div>
-        <div><span class="legend-line directrix"></span> Директриси</div>
+        <div><span class="legend-dot conjugate"></span> Спряжена</div> <div><span class="legend-dot focus"></span> Фокуси</div>
+        <div><span class="legend-dot surface-3d"></span> 3D-поверхня</div> <div><span class="legend-line directrix"></span> Директриси</div>
         <div><span class="legend-line major-axis"></span> Головна вісь</div>
         <div><span class="legend-line minor-axis"></span> Побічна вісь</div>
         <div><span class="legend-line asymptote"></span> Асимптоти</div>
@@ -242,20 +195,17 @@
   </main>
 
   <footer class="footer">
-    <div>Команда Гіпермега • Криві другого порядку</div>
-  </footer>
+    <div>Команда Гіпермега • Криві другого порядку</div> </footer>
 
   <script src="scripts/solver.js"></script>
-  <script src="scripts/graph.js"></script>
-  <script src="scripts/locus_animation.js"></script>
-  <script src="scripts/canonical.js"></script>
-  <script src="scripts/theory.js"></script>
-
+  <script src="scripts/graph.js"></script> <script src="scripts/locus_animation.js"></script> <script src="scripts/canonical.js"></script>
+  <script src="scripts/theory.js"></script> 
   <script>
+    // УНІФІКОВАНИЙ СКРИПТ АВТОВІДТВОРЕННЯ
     document.addEventListener('DOMContentLoaded', () => {
         const audio = document.getElementById('background-music');
         if (audio) {
-            audio.volume = 0.05;
+            audio.volume = 0.05; 
             let playPromise = audio.play();
 
             if (playPromise !== undefined) {
@@ -275,3 +225,4 @@
   </script>
 </body>
 </html>
+

@@ -54,16 +54,16 @@
         <h1>Гіпербола: Визначення та властивості</h1>
         <p>
           <strong>Гіпербола</strong> — це геометричне місце точок, для яких модуль різниці відстаней до двох фокусів \( F_{1} \) та \( F_{2} \)
- є сталою величиною (зазвичай 2a).
+ є сталою величиною (зазвичай 2a).
         </p>
-         
+        
         <h2>Канонічне рівняння</h2>
         <h3>Горизонтальна гіпербола (дійсна вісь на OX):</h3>
         \[ \frac{x^2}{a^2} - \frac{y^2}{b^2} = 1 \]
-         
+        
         <h3>Вертикальна гіпербола (дійсна вісь на OY):</h3>
         \[ \frac{y^2}{a^2} - \frac{x^2}{b^2} = 1 \]
-         
+        
         <h2>Ключові параметри (для \(\frac{x^2}{a^2} - \frac{y^2}{b^2} = 1\))</h2>
         <ul>
           <li><strong>Дійсна піввісь (<i>a</i>)</strong> — відстань від центру до вершини.</li>
@@ -87,11 +87,11 @@
         <p>
           <strong>Еліпс</strong> — це геометричне місце точок, сума відстаней від яких до двох фіксованих точок (фокусів \( F_{1} \) і \( F_{2} \)) є сталою величиною (зазвичай 2a).
         </p>
-         
+        
         <h2>Канонічне рівняння</h2>
         \[ \frac{x^2}{a^2} + \frac{y^2}{b^2} = 1 \]
         <p>(Тут ми припускаємо, що a > b, тобто велика вісь лежить на OX)</p>
-         
+        
         <h2>Ключові параметри</h2>
         <ul>
           <li><strong>Велика піввісь (<i>a</i>)</strong> — відстань від центру до "далекої" вершини.</li>
@@ -115,14 +115,14 @@
         <p>
           <strong>Парабола</strong> — це геометричне місце точок, рівновіддалених від фіксованої точки (фокуса фокуса \( F \)) і фіксованої прямої (директриси D).
         </p>
-         
+        
         <h2>Канонічне рівняння</h2>
         <h3>Горизонтальна парабола (вісь на OX):</h3>
         \[ y^2 = 2px \quad \text{або} \quad y^2 = 4ax \]
-         
+        
         <h3>Вертикальна парабола (вісь на OY):</h3>
         \[ x^2 = 2py \quad \text{або} \quad x^2 = 4ay \]
-         
+        
         <h2>Ключові параметри (для \(y^2 = 2px\))</h2>
         <ul>
           <li><strong>Вершина:</strong> Початок координат \((0, 0)\).</li>
@@ -145,7 +145,7 @@
         <p>Будь-яка крива другого порядку (еліпс, гіпербола, парабола або їхні вироджені випадки) описується загальним рівнянням:</p>
         \[ Ax^2 + Bxy + Cy^2 + Dx + Ey + F = 0 \]
         <p>Член \(Bxy\) відповідає за поворот кривої відносно осей координат.</p>
-         
+        
         <h2>Інваріанти та дискримінант</h2>
         <p>Тип кривої можна визначити, не зводячи її до канонічного вигляду, за допомогою інваріантів. Найважливіший з них — <strong>малий дискримінант</strong>:</p>
         \[ \delta = B^2 - 4AC \]
@@ -156,7 +156,7 @@
         </ul>
       </article>
     </div>
-     
+    
     <article class="card">
         <h2>Проєкт Мар'яни Юріївни: Історія (Коротка версія)</h2>
         <p>
@@ -166,31 +166,32 @@
             <a href="theory_story.html" class="btn primary">Повна історія проєкту →</a>
         </p>
     </article>
-     
+    
   </main>
 
   <script src="scripts/theory.js"></script>
-  <script src="scripts/theory_logic.js"></script>   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const audio = document.getElementById('background-music');
-        if (audio) {
-            audio.volume = 0.05; 
-            let playPromise = audio.play();
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const audio = document.getElementById('background-music');
+        if (audio) {
+            audio.volume = 0.05;
+            let playPromise = audio.play();
 
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    console.log("Автозапуск музики заблоковано. Очікуємо на клік...");
-                    const startAudioOnClick = () => {
-                        audio.play().catch(e => console.error("Не вдалося відтворити аудіо навіть після кліку:", e));
-                        document.body.removeEventListener('click', startAudioOnClick);
-                        document.body.removeEventListener('touchstart', startAudioOnClick);
-                    };
-                    document.body.addEventListener('click', startAudioOnClick);
-                    document.body.addEventListener('touchstart', startAudioOnClick);
-                });
-            }
-        }
-    });
-  </script>
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.log("Автозапуск музики заблоковано. Очікуємо на клік...");
+                    const startAudioOnClick = () => {
+                        audio.play().catch(e => console.error("Не вдалося відтворити аудіо навіть після кліку:", e));
+                        document.body.removeEventListener('click', startAudioOnClick);
+                        document.body.removeEventListener('touchstart', startAudioOnClick);
+                    };
+                    document.body.addEventListener('click', startAudioOnClick);
+                    document.body.addEventListener('touchstart', startAudioOnClick);
+                });
+            }
+        }
+    });
+  </script>
 </body>
 </html>
