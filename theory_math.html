@@ -1,200 +1,46 @@
-<!DOCTYPE html>
-<html lang="uk">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ConicLab — Теорія: Криві 2-го порядку</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-</head>
-<body>
-  
-  <audio id="background-music" loop autoplay>
-      <source src="music/math.m4a" type="audio/mp4">
-      Ваш браузер не підтримує аудіо-елемент.
-  </audio>
+/* theory_logic.js
+    - Implements tab switching logic for the theory_math.html page.
+*/
 
-  <header class="topbar">
-    <div class="brand">
-      <div class="logo">Команда Гіпермега</div>
-      <div class="subtitle">Криві другого порядку</div>
-    </div>
-
-<nav class="nav">
-  <a id="nav-build" class="nav-link" href="index.html">Загальна побудова</a>
-  <a id="nav-canonical" class="nav-link" href="canonical.html">Канонічна побудова</a>
-  <a id="nav-theory" class="nav-link active" href="theory_math.html">Теорія</a>
-  <a href="quiz.html" class="nav-link">Вікторина</a>
-  <a href="tasks.html" class="nav-link">Задачі</a>
-  <a id="nav-story" class="nav-link" href="theory_story.html">Наша історія</a>
-</nav>
-
-    <div class="controls">
-      <label class="theme-switch">
-        <input id="themeToggle2" type="checkbox" />
-        <span class="slider"></span>
-      </label>
-    </div>
-  </header>
-
-  <main class="theory-page">
-
-    <div class="card card-panel" style="padding: 5px;">
-      <div class="tab-buttons">
-        <button class="tab-btn active" data-type="hyperbola">Гіпербола</button>
-        <button class="tab-btn" data-type="ellipse">Еліпс / Коло</button>
-        <button class="tab-btn" data-type="parabola">Парабола</button>
-        <button class="tab-btn" data-type="general">Загальне рівняння</button>
-      </div>
-    </div>
-
-    <div id="theory-hyperbola" class="tab-content active">
-      <article class="card">
-        <h1>Гіпербола: Визначення та властивості</h1>
-        <p>
-          <strong>Гіпербола</strong> — це геометричне місце точок, для яких модуль різниці відстаней до двох фокусів \( F_{1} \) та \( F_{2} \)
- є сталою величиною (зазвичай 2a).
-        </p>
-        
-        <h2>Канонічне рівняння</h2>
-        <h3>Горизонтальна гіпербола (дійсна вісь на OX):</h3>
-        \[ \frac{x^2}{a^2} - \frac{y^2}{b^2} = 1 \]
-        
-        <h3>Вертикальна гіпербола (дійсна вісь на OY):</h3>
-        \[ \frac{y^2}{a^2} - \frac{x^2}{b^2} = 1 \]
-        
-        <h2>Ключові параметри (для \(\frac{x^2}{a^2} - \frac{y^2}{b^2} = 1\))</h2>
-        <ul>
-          <li><strong>Дійсна піввісь (<i>a</i>)</strong> — відстань від центру до вершини.</li>
-          <li><strong>Уявна піввісь (<i>b</i>)</strong> — визначає «розкриття» та будує асимптоти.</li>
-          <li><strong>Вершини:</strong> Координати — \( (\pm a,\, 0) \)</li>
-          <li><strong>Фокуси:</strong> \( (\pm c,\, 0), \quad \text{де } c^2 = a^2 + b^2 \)</li>
-          <li><strong>Асимптоти:</strong> \( y = \pm \frac{b}{a}x \)</li>
-          <li><strong>Ексцентриситет (<i>e</i>):</strong> \( e = \frac{c}{a} = \frac{\sqrt{a^2 + b^2}}{a} \) (Завжди \(e > 1\))</li>
-          <li><strong>Директриси:</strong> \( x = \pm \frac{a}{e} = \pm \frac{a^2}{c} \)</li>
-        </ul>
-      </article>
-      <article class="card">
-          <h2>Оптична властивість гіперболи</h2>
-          <p>Промінь світла з одного фокуса (\( F_{1} \)) відбивається від гіперболи, рухаючись так, ніби він виходить з іншого фокуса (\( F_{2} \)). Ця властивість є основою гіперболічних дзеркал, які використовуються в телескопах (наприклад, система Кассегрена).</p>
-      </article>
-    </div>
-
-    <div id="theory-ellipse" class="tab-content">
-      <article class="card">
-        <h1>Еліпс: Визначення та властивості</h1>
-        <p>
-          <strong>Еліпс</strong> — це геометричне місце точок, сума відстаней від яких до двох фіксованих точок (фокусів \( F_{1} \) і \( F_{2} \)) є сталою величиною (зазвичай 2a).
-        </p>
-        
-        <h2>Канонічне рівняння</h2>
-        \[ \frac{x^2}{a^2} + \frac{y^2}{b^2} = 1 \]
-        <p>(Тут ми припускаємо, що a > b, тобто велика вісь лежить на OX)</p>
-        
-        <h2>Ключові параметри</h2>
-        <ul>
-          <li><strong>Велика піввісь (<i>a</i>)</strong> — відстань від центру до "далекої" вершини.</li>
-          <li><strong>Мала піввісь (<i>b</i>)</strong> — відстань від центру до "ближньої" вершини.</li>
-          <li><strong>Вершини:</strong> \( (\pm a,\, 0) \) та \( (0, \pm b) \)</li>
-          <li><strong>Фокуси:</strong> \( (\pm c,\, 0), \quad \text{де } c^2 = a^2 - b^2 \)</li>
-          <li><strong>Ексцентриситет (<i>e</i>):</strong> \( e = \frac{c}{a} = \frac{\sqrt{a^2 - b^2}}{a} \) (Завжди \(0 \le e < 1\))</li>
-          <li><strong>Коло:</strong> Окремий випадок еліпса, де \(a = b\) (і \(c = 0\)), тому \(e = 0\).</li>
-          <li><strong>Директриси:</strong> \( x = \pm \frac{a}{e} = \pm \frac{a^2}{c} \)</li>
-        </ul>
-      </article>
-      <article class="card">
-          <h2>Оптична властивість еліпса</h2>
-          <p>Будь-який промінь, що виходить з одного фокуса (\( F_{1} \)), відбившись від еліпса, обов'язково пройде через інший фокус \( F_{2} \). Це використовується в медицині (літотрипсія) для фокусування ударних хвиль та в архітектурі ("кімнати-шептуни").</p>
-      </article>
-    </div>
-
-    <div id="theory-parabola" class="tab-content">
-      <article class="card">
-        <h1>Парабола: Визначення та властивості</h1>
-        <p>
-          <strong>Парабола</strong> — це геометричне місце точок, рівновіддалених від фіксованої точки (фокуса фокуса \( F \)) і фіксованої прямої (директриси D).
-        </p>
-        
-        <h2>Канонічне рівняння</h2>
-        <h3>Горизонтальна парабола (вісь на OX):</h3>
-        \[ y^2 = 2px \quad \text{або} \quad y^2 = 4ax \]
-        
-        <h3>Вертикальна парабола (вісь на OY):</h3>
-        \[ x^2 = 2py \quad \text{або} \quad x^2 = 4ay \]
-        
-        <h2>Ключові параметри (для \(y^2 = 2px\))</h2>
-        <ul>
-          <li><strong>Вершина:</strong> Початок координат \((0, 0)\).</li>
-          <li><strong>Параметр (<i>p</i>)</strong> — відстань від фокуса до директриси.</li>
-          <li><strong>Фокус:</strong> \( F(\frac{p}{2},\, 0) \)</li>
-          <li><strong>Директриса:</strong> Пряма \( x = -\frac{p}{2} \)</li>
-          <li><strong>Ексцентриситет (<i>e</i>):</strong> Для будь-якої параболи \(e = 1\).</li>
-        </ul>
-      </article>
-      <article class="card">
-          <h2>Оптична властивість параболи</h2>
-          <p>Будь-який промінь, паралельний осі симетрії параболи, відбившись від неї, проходить через фокус. І навпаки: промені з фокуса відбиваються паралельним пучком.</p>
-          <p>Це фундаментальна властивість, що використовується у фарах, прожекторах, супутникових тарілках та сонячних концентраторах.</p>
-      </article>
-    </div>
-
-    <div id="theory-general" class="tab-content">
-      <article class="card">
-        <h2>Загальне рівняння другого порядку</h2>
-        <p>Будь-яка крива другого порядку (еліпс, гіпербола, парабола або їхні вироджені випадки) описується загальним рівнянням:</p>
-        \[ Ax^2 + Bxy + Cy^2 + Dx + Ey + F = 0 \]
-        <p>Член \(Bxy\) відповідає за поворот кривої відносно осей координат.</p>
-        
-        <h2>Інваріанти та дискримінант</h2>
-        <p>Тип кривої можна визначити, не зводячи її до канонічного вигляду, за допомогою інваріантів. Найважливіший з них — <strong>малий дискримінант</strong>:</p>
-        \[ \delta = B^2 - 4AC \]
-        <ul>
-          <li>Якщо <strong>\( \delta < 0 \)</strong> — крива <strong>еліптичного типу</strong> (еліпс, коло, точка, або уявний еліпс).</li>
-          <li>Якщо <strong>\( \delta > 0 \)</strong> — крива <strong>гіперболічного типу</strong> (гіпербола або пара перетинних прямих).</li>
-          <li>Якщо <strong>\( \delta = 0 \)</strong> — крива <strong>параболічного типу</strong> (парабола, пара паралельних прямих, одна пряма або нічого).</li>
-        </ul>
-      </article>
-    </div>
+document.addEventListener('DOMContentLoaded', () => {
     
-    <article class="card">
-        <h2>Проєкт Мар'яни Юріївни: Історія (Коротка версія)</h2>
-        <p>
-            Цей сайт є частиною проєкту про архітектурне застосування гіперболоїдних конструкцій. Щоб прочитати повну історію про студентів та їхню подорож, перейдіть на окрему сторінку.
-        </p>
-        <p>
-            <a href="theory_story.html" class="btn primary">Повна історія проєкту →</a>
-        </p>
-    </article>
-    
-  </main>
+    const tabButtons = document.querySelectorAll('.tab-buttons .tab-btn');
+    const tabContents = document.querySelectorAll('.theory-page .tab-content');
 
-  <script src="scripts/theory.js"></script>
-  
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const audio = document.getElementById('background-music');
-        if (audio) {
-            audio.volume = 0.04;
-            let playPromise = audio.play();
-
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    console.log("Автозапуск музики заблоковано. Очікуємо на клік...");
-                    const startAudioOnClick = () => {
-                        audio.play().catch(e => console.error("Не вдалося відтворити аудіо навіть після кліку:", e));
-                        document.body.removeEventListener('click', startAudioOnClick);
-                        document.body.removeEventListener('touchstart', startAudioOnClick);
-                    };
-                    document.body.addEventListener('click', startAudioOnClick);
-                    document.body.addEventListener('touchstart', startAudioOnClick);
-                });
+    // Якщо є кнопки вкладок, ініціалізуємо логіку
+    if (tabButtons.length > 0) {
+        
+        // 1. Приховуємо весь контент, крім активного
+        tabContents.forEach(content => {
+            if (!content.classList.contains('active')) {
+                content.style.display = 'none';
             }
-        }
-    });
-  </script>
-</body>
-</html>
+        });
 
+        // 2. Додаємо обробники подій
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetType = button.dataset.type;
+                const targetId = `theory-${targetType}`; 
 
+                // Оновлення кнопок
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
 
+                // Оновлення контенту
+                tabContents.forEach(content => {
+                    if (content.id === targetId) {
+                        content.style.display = 'block';
+                        // Можна додати анімацію появи, якщо вона є у стилях (наприклад, через клас)
+                    } else {
+                        content.style.display = 'none';
+                    }
+                });
+            });
+        });
+        
+        // Переконатися, що при завантаженні відображається лише перша активна вкладка
+        // (Це спрацьовує завдяки логіці в пункті 1, але можна форсувати клік)
+        document.querySelector('.tab-buttons .tab-btn.active')?.click();
+    }
+});
