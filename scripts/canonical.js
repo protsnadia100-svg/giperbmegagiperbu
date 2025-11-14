@@ -1,27 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     
-    // --- 1. ЛОГІКА ПЕРЕМИКАННЯ ВКЛАДОК ---
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const type = button.dataset.type;
-            tabButtons.forEach(btn => btn.classList.remove('active'));
-            button.classList.add('active');
-            tabContents.forEach(content => {
-                content.classList.toggle('active', content.id === `${type}-form`);
-            });
-            if (type === 'hyperbola') {
-                const orientationSelect = document.getElementById('hyperbola-orientation');
-                updateHyperbolaPreview(orientationSelect.value);
-            } else if (type === 'parabola') {
-                const orientationSelect = document.getElementById('parabola-orientation');
-                updateParabolaPreview(orientationSelect.value);
-            }
-        });
-    });
-
+    // --- 1. ЛОГІКА ОНОВЛЕННЯ ПРЕВ'Ю (ЗАЛИШИЛАСЯ) ---
+    
+    // Оновлення прев'ю гіперболи
     const hypOrientation = document.getElementById('hyperbola-orientation');
     if (hypOrientation) hypOrientation.addEventListener('change', (e) => updateHyperbolaPreview(e.target.value));
     
@@ -36,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.MathJax) MathJax.typesetPromise([previewEl]);
     }
 
+    // Оновлення прев'ю параболи
     const parOrientation = document.getElementById('parabola-orientation');
     if (parOrientation) parOrientation.addEventListener('change', (e) => updateParabolaPreview(e.target.value));
 
@@ -54,90 +36,99 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    // --- 2. ЛОГІКА КНОПКИ "ПОБУДУВАТИ" ---
-    const buildBtn = document.getElementById('buildBtnCanonical');
-    if (buildBtn) {
-        buildBtn.addEventListener('click', () => {
-            const activeTab = document.querySelector('.tab-btn.active').dataset.type;
+    // --- 2. НОВА ЛОГІКА КНОПОК "ПОБУДУВАТИ" ---
+
+    /**
+     * Загальна функція для побудови, яку викликають усі кнопки.
+     * @param {string} activeTab - 'ellipse', 'hyperbola', або 'parabola'
+     */
+    function buildFromCanonical(activeTab) {
+        try {
+            const params = {};
+            const inputs = document.querySelectorAll(`#${activeTab}-form input, #${activeTab}-form select`);
+            inputs.forEach(input => {
+                let key = input.name || input.id;
+                key = key.replace(`${activeTab}-`, '');
+                params[key] = (input.type === 'number') ? parseFloat(input.value) : input.value;
+            });
+
+            let A = 0, B = 0, C = 0, D = 0, E = 0, F = 0;
+
+            if (activeTab === 'ellipse') {
+                if (!params.a || !params.b) throw new Error("'a' та 'b' мають бути задані");
+                const a2 = params.a**2, b2 = params.b**2;
+                A = b2; C = a2; D = -2 * b2 * params.h; E = -2 * a2 * params.k;
+                F = b2 * params.h**2 + a2 * params.k**2 - a2 * b2;
             
-            try {
-                const params = {};
-                const inputs = document.querySelectorAll(`#${activeTab}-form input, #${activeTab}-form select`);
-                inputs.forEach(input => {
-                    let key = input.name || input.id;
-                    key = key.replace(`${activeTab}-`, '');
-                    params[key] = (input.type === 'number') ? parseFloat(input.value) : input.value;
-                });
-
-                let A = 0, B = 0, C = 0, D = 0, E = 0, F = 0;
-
-                if (activeTab === 'ellipse') {
-                    if (!params.a || !params.b) throw new Error("'a' та 'b' мають бути задані");
-                    const a2 = params.a**2, b2 = params.b**2;
-                    A = b2; C = a2; D = -2 * b2 * params.h; E = -2 * a2 * params.k;
-                    F = b2 * params.h**2 + a2 * params.k**2 - a2 * b2;
+            } else if (activeTab === 'hyperbola') {
+                if (!params.a || !params.b) throw new Error("'a' та 'b' мають бути задані");
+                const a2 = params.a**2, b2 = params.b**2;
                 
-                } else if (activeTab === 'hyperbola') {
-                    if (!params.a || !params.b) throw new Error("'a' та 'b' мають бути задані");
-                    const a2 = params.a**2, b2 = params.b**2;
-                    
-                    if (params.orientation === 'vertical') {
-                        A = -a2; C = b2; D = 2 * a2 * params.h; E = -2 * b2 * params.k;
-                        F = b2 * params.k**2 - a2 * params.h**2 - a2 * b2;
-                    } else {
-                        A = b2; C = -a2; D = -2 * b2 * params.h; E = 2 * a2 * params.k;
-                        F = b2 * params.h**2 - a2 * params.k**2 - a2 * b2;
-                    }
-                
-                } else if (activeTab === 'parabola') {
-                    if (!params.p) throw new Error("'p' має бути заданий");
-                    let p4 = 4 * params.p;
-                    
-                    switch (params.orientation) {
-                        case 'horizontal-right': C = 1; D = -p4; E = -2 * params.k; F = params.k**2 + p4 * params.h; break;
-                        case 'horizontal-left':  p4 = -p4; C = 1; D = -p4; E = -2 * params.k; F = params.k**2 + p4 * params.h; break;
-                        case 'vertical-up':      A = 1; D = -2 * params.h; E = -p4; F = params.h**2 + p4 * params.k; break;
-                        case 'vertical-down':    p4 = -p4; A = 1; D = -2 * params.h; E = -p4; F = params.h**2 + p4 * params.k; break;
-                    }
-                }
-                
-                if (typeof Solver.analyzeGeneral === 'function' && 
-                    typeof plotAnalysis === 'function' && 
-                    typeof displayAnalysis === 'function') 
-                {
-                    const parsed = { A, B, C, D, E, F };
-                    const analysis = Solver.analyzeGeneral(parsed);
-                    
-                    window.lastAnalysis = analysis; 
-                    window.lastTangentInfo = null; 
-                    window.defaultTangentInfo = null;
-
-                    const eqInput = document.getElementById('equationInput');
-                    if (eqInput) {
-                        let eqStr = `${A}x^2 + ${B}xy + ${C}y^2 + ${D}x + ${E}y + ${F} = 0`;
-                        eqInput.value = eqStr; 
-                    }
-
-                    const defaultTangent = Solver.calculateDefaultTangent(parsed, analysis);
-                    if (defaultTangent) {
-                        window.defaultTangentInfo = defaultTangent;
-                        window.lastTangentInfo = defaultTangent; 
-                    }
-
-                    displayAnalysis(analysis); 
-                    document.getElementById('stepsOutput').innerHTML = Solver.getSteps(parsed, analysis);
-                    plotAnalysis(analysis); 
-
+                if (params.orientation === 'vertical') {
+                    A = -a2; C = b2; D = 2 * a2 * params.h; E = -2 * b2 * params.k;
+                    F = b2 * params.k**2 - a2 * params.h**2 - a2 * b2;
                 } else {
-                    throw new Error("Необхідні функції (Solver/plotAnalysis/displayAnalysis) не завантажено.");
+                    A = b2; C = -a2; D = -2 * b2 * params.h; E = 2 * a2 * params.k;
+                    F = b2 * params.h**2 - a2 * params.k**2 - a2 * b2;
+                }
+            
+            } else if (activeTab === 'parabola') {
+                if (!params.p) throw new Error("'p' має бути заданий");
+                let p4 = 4 * params.p;
+                
+                switch (params.orientation) {
+                    case 'horizontal-right': C = 1; D = -p4; E = -2 * params.k; F = params.k**2 + p4 * params.h; break;
+                    case 'horizontal-left':  p4 = -p4; C = 1; D = -p4; E = -2 * params.k; F = params.k**2 + p4 * params.h; break;
+                    case 'vertical-up':      A = 1; D = -2 * params.h; E = -p4; F = params.h**2 + p4 * params.k; break;
+                    case 'vertical-down':    p4 = -p4; A = 1; D = -2 * params.h; E = -p4; F = params.h**2 + p4 * params.k; break;
+                }
+            }
+            
+            if (typeof Solver.analyzeGeneral === 'function' && 
+                typeof plotAnalysis === 'function' && 
+                typeof displayAnalysis === 'function') 
+            {
+                const parsed = { A, B, C, D, E, F };
+                const analysis = Solver.analyzeGeneral(parsed);
+                
+                window.lastAnalysis = analysis; 
+                window.lastTangentInfo = null; 
+                window.defaultTangentInfo = null;
+
+                const eqInput = document.getElementById('equationInput');
+                if (eqInput) {
+                    let eqStr = `${A}x^2 + ${B}xy + ${C}y^2 + ${D}x + ${E}y + ${F} = 0`;
+                    eqInput.value = eqStr; 
                 }
 
-            } catch (error) {
-                console.error('Помилка при побудові канонічної кривої:', error);
-                document.getElementById('solveOutput').innerHTML = `<span style="color: #ff6b6b;">Помилка: ${error.message}</span>`;
+                const defaultTangent = Solver.calculateDefaultTangent(parsed, analysis);
+                if (defaultTangent) {
+                    window.defaultTangentInfo = defaultTangent;
+                }
+
+                displayAnalysis(analysis); 
+                document.getElementById('stepsOutput').innerHTML = Solver.getSteps(parsed, analysis);
+                plotAnalysis(analysis); 
+
+            } else {
+                throw new Error("Необхідні функції (Solver/plotAnalysis/displayAnalysis) не завантажено.");
             }
-        });
+
+        } catch (error) {
+            console.error(`Помилка при побудові (${activeTab}):`, error);
+            document.getElementById('solveOutput').innerHTML = `<span style="color: #ff6b6b;">Помилка: ${error.message}</span>`;
+        }
     }
+    
+    // Додаємо обробники для КОЖНОЇ кнопки
+    const buildEllipseBtn = document.getElementById('buildEllipseBtn');
+    if (buildEllipseBtn) buildEllipseBtn.addEventListener('click', () => buildFromCanonical('ellipse'));
+
+    const buildHyperbolaBtn = document.getElementById('buildHyperbolaBtn');
+    if (buildHyperbolaBtn) buildHyperbolaBtn.addEventListener('click', () => buildFromCanonical('hyperbola'));
+
+    const buildParabolaBtn = document.getElementById('buildParabolaBtn');
+    if (buildParabolaBtn) buildParabolaBtn.addEventListener('click', () => buildFromCanonical('parabola'));
 
 
     // --- 3. ЛОГІКА ДЛЯ СОНІФІКАЦІЇ ГІПЕРБОЛИ ---
@@ -178,6 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (oscillator) oscillator.stop(); if (audioCtx) audioCtx.close().catch(console.error);
             if (stopTimer) clearTimeout(stopTimer);
             isPlaying = false; audioCtx = null; oscillator = null; gainNode = null; playBtn.innerHTML = playIconHTML;
+            if (window.MathJax) MathJax.typesetPromise([playBtn]); // Оновлюємо MathJax
         }
         playBtn.addEventListener('click', playHyperbolaSonification);
     }
@@ -194,17 +186,18 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Обробники для нових полів дотичної
         if ($g('plotManualTangentBtn')) $g('plotManualTangentBtn').addEventListener('click', plotTangentByEquation);
-        if ($g('findTangentAtPointBtn')) $g('findTangentAtPointBtn').addEventListener('click', findTangentAtPoint); // НОВИЙ обробник
+        if ($g('findTangentAtPointBtn')) $g('findTangentAtPointBtn').addEventListener('click', findTangentAtPoint);
     } else {
         console.warn("graph.js interactive functions (toggleChordExplorer, etc.) not found.");
     }
     
-    // --- ЗАВАНТАЖЕННЯ РІВНЯННЯ З URL (для задач) ---
+    // --- 5. ЗАВАНТАЖЕННЯ РІВНЯННЯ З URL (для задач) ---
     const urlParams = new URLSearchParams(window.location.search);
     const type = urlParams.get('type');
     if (type) {
-        const tabButton = document.querySelector(`.tab-btn[data-type="${type}"]`);
-        if (tabButton) tabButton.click();
+        // (Логіка кліку на таб більше не потрібна)
+        // const tabButton = document.querySelector(`.tab-btn[data-type="${type}"]`);
+        // if (tabButton) tabButton.click();
         
         urlParams.forEach((value, key) => {
             if (key !== 'type') {
@@ -220,6 +213,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        if (buildBtn) buildBtn.click();
+        // Викликаємо відповідну кнопку "Побудувати"
+        const buildButton = document.getElementById(`build${type.charAt(0).toUpperCase() + type.slice(1)}Btn`);
+        if (buildButton) {
+            buildButton.click();
+        }
+    }
+
+    // --- 6. ПЕРВИННИЙ ЗАПУСК MATHJAX ---
+    if (window.MathJax && MathJax.typesetPromise) {
+        MathJax.typesetPromise().catch(console.error);
     }
 });
