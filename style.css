@@ -272,40 +272,39 @@ body.theme-light .modal-content {
 }
 
 /* ===============================================
-   СТИЛІ ДЛЯ ВКЛАДОК (TABS)
+   ОНОВЛЕНІ СТИЛІ ДЛЯ КАНOНІЧНОЇ СТОРІНКИ
 =============================================== */
 
-/* Сторінка канонічної побудови ТА сторінка теорії */
-.tab-buttons {
-  display: flex;
-  margin-bottom: 15px;
-  border-radius: 10px;
-  background: rgba(0,0,0,0.2);
-  padding: 5px;
+/* Прибираємо стилі для вкладок */
+/* .tab-buttons { ... } */
+/* .tab-btn { ... } */
+/* .tab-content { ... } */
+
+/* Нові стилі для секцій форм */
+.form-section {
+  padding: 10px 0;
 }
-.tab-btn {
-  flex: 1;
-  padding: 8px 5px;
+.form-title {
+  font-size: 1.25rem;
+  color: var(--accent);
+  margin: 0 0 15px 0;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+body.theme-light .form-title {
+  border-bottom-color: rgba(0,0,0,0.1);
+}
+
+.form-divider {
   border: none;
-  background: transparent;
-  color: var(--muted);
-  font-weight: 600;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: background 0.2s, color 0.2s;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 20px 0;
 }
-.tab-btn.active {
-  background: var(--accent);
-  color: #fff;
+body.theme-light .form-divider {
+  background: rgba(0,0,0,0.1);
 }
-.tab-content {
-  display: none;
-}
-.tab-content.active {
-  display: block;
-  /* Додаємо анімацію появи для контенту вкладок */
-  animation: fadeIn 0.5s ease-in-out;
-}
+
 .equation-preview {
   text-align: center;
   padding: 10px;
@@ -340,8 +339,9 @@ body.theme-light .modal-content {
 .param-group.orientation-group {
   grid-column: 1 / -1; 
 }
+
 /* ===============================================
-   КІНЕЦЬ СТИЛІВ ДЛЯ ВКЛАДОК
+   КІНЕЦЬ ОНОВЛЕНИХ СТИЛІВ
 =============================================== */
 
 
