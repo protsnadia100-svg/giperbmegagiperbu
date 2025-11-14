@@ -30,8 +30,8 @@
   <script>
   window.MathJax = {
     tex: {
-      inlineMath: [['$', '$'], ['\\(', '\\)']],
-      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      inlineMath: [['$', '$'], ['\(', '\)']],
+      displayMath: [['$$', '$$'], ['\[', '\]']],
       processEscapes: true
     },
     chtml: {
@@ -88,7 +88,38 @@
     <aside class="left-panel">
       <div class="card card-panel">
 
-        <div id="ellipse-form" class="form-section">
+        <!-- FORM SWITCHER BUTTONS -->
+<div class="formula-switcher">
+  <button class="formula-btn" data-target="ellipse-form">$$ \frac{(x-h)^2}{a^2} + \frac{(y-k)^2}{b^2} = 1 $$</button>
+  <button class="formula-btn" data-target="hyperbola-form">$$ \frac{(x-h)^2}{a^2} - \frac{(y-k)^2}{b^2} = 1 $$</button>
+  <button class="formula-btn" data-target="parabola-form">$$ (y-k)^2 = 4p(x-h) $$</button>
+</div>
+
+<style>
+  .formula-switcher { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .formula-btn { background: #ffffff22; border: 1px solid #888; padding: 10px; border-radius: 8px; cursor: pointer; font-size: 18px; transition: 0.2s; }
+  .formula-btn:hover { background: #ffffff44; }
+  .form-section { display: none; }
+  .form-section.active { display: block; }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const buttons = document.querySelectorAll('.formula-btn');
+    const sections = document.querySelectorAll('.form-section');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        sections.forEach(s => s.classList.remove('active'));
+        document.getElementById(btn.dataset.target).classList.add('active');
+        MathJax.typesetPromise();
+      });
+    });
+    document.getElementById('ellipse-form').classList.add('active');
+  });
+</script>
+
+<!-- SWITCHER INSERTED -->
+<div id="ellipse-form" class="form-section">
           <h3 class="form-title">Еліпс / Коло</h3>
           <div class="equation-preview">$$ \frac{(x-h)^2}{a^2} + \frac{(y-k)^2}{b^2} = 1 $$</div>
           <div class="param-grid">
