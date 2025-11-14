@@ -48,7 +48,23 @@
         <p>
             Мета полягала не просто в тому, щоб знайти ці криві. Студенти мали зібрати дані для створення точних 3D-моделей та запустити симуляції навантажень, доводячи, чому саме ця форма є настільки ефективною. Розділившись на команди, вони вирушили у подорож.
         </p>
+    </article>
 
+    <article class="card">
+        <h2>Відео-звіт про проєкт</h2>
+        <p>Подивіться коротке відео про нашу подорож та відкриття.</p>
+        
+        <video 
+            class="story-video" 
+            controls 
+            style="width:100%; height:auto; border-radius: 8px;"
+            preload="metadata"
+        >
+            <source src="криві.mp4" type="video/mp4">
+            Ваш браузер не підтримує відео-елемент.
+        </video>
+    </article>
+    <article class="card">
         <h3>Етап 1: США — Скляні Асимптоти</h3>
         <p>
             Перша команда прибула до інноваційного кампусу в США, де на них чекав архітектурний шедевр зі скла та бетону.
@@ -105,7 +121,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         const audio = document.getElementById('background-music');
         if (audio) {
-            audio.volume = 0.04; // Стандартна гучність 20%
+            audio.volume = 0.05; // Стандартна гучність 20%
             let playPromise = audio.play();
 
             if (playPromise !== undefined) {
@@ -124,7 +140,4 @@
     });
   </script>
 </body>
-
 </html>
-
-
