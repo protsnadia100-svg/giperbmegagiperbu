@@ -29,6 +29,10 @@
   <a id="nav-story" class="nav-link" href="theory_story.html">Наша історія</a>
 </nav>
     <div class="controls">
+      <button id="musicToggle" class="music-btn" title="Музика">
+        💿
+      </button>
+
       <label class="theme-switch">
         <input id="themeToggle" type="checkbox" />
         <span class="slider"></span>
@@ -223,20 +227,41 @@
   <script>
     document.addEventListener('DOMContentLoaded', () => {
         const audio = document.getElementById('background-music');
-        if (audio) {
-            audio.volume = 0.05; // Стандартна гучність 20%
-            let playPromise = audio.play();
+        const musicBtn = document.getElementById('musicToggle');
+        
+        if (audio && musicBtn) {
+            audio.volume = 0.05; 
+            let isPlaying = false;
 
+            const updateState = (playing) => {
+                isPlaying = playing;
+                if (playing) {
+                    musicBtn.classList.add('playing'); 
+                    musicBtn.style.filter = "none";    
+                } else {
+                    musicBtn.classList.remove('playing'); 
+                    musicBtn.style.filter = "grayscale(100%)"; 
+                }
+            };
+
+            musicBtn.addEventListener('click', () => {
+                if (isPlaying) {
+                    audio.pause();
+                    updateState(false);
+                } else {
+                    audio.play().then(() => {
+                        updateState(true);
+                    }).catch(e => console.error("Помилка відтворення:", e));
+                }
+            });
+
+            const playPromise = audio.play();
             if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    console.log("Автозапуск музики заблоковано. Очікуємо на клік...");
-                    const startAudioOnClick = () => {
-                        audio.play().catch(e => console.error("Не вдалося відтворити аудіо навіть після кліку:", e));
-                        document.body.removeEventListener('click', startAudioOnClick);
-                        document.body.removeEventListener('touchstart', startAudioOnClick);
-                    };
-                    document.body.addEventListener('click', startAudioOnClick);
-                    document.body.addEventListener('touchstart', startAudioOnClick);
+                playPromise.then(() => {
+                    updateState(true);
+                }).catch(() => {
+                    updateState(false);
+                    console.log("Автозапуск заблоковано. Натисніть на диск.");
                 });
             }
         }

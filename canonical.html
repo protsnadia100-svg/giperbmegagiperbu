@@ -9,7 +9,6 @@
   <link rel="stylesheet" href="style.css" />
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
 
-  <!-- 🔥 ВИПРАВЛЕНИЙ MathJax -->
   <script>
     window.MathJax = {
       tex: {
@@ -51,6 +50,10 @@
     </nav>
 
     <div class="controls">
+      <button id="musicToggle" class="music-btn" title="Музика">
+        💿
+      </button>
+      
       <label class="theme-switch">
         <input id="themeToggle" type="checkbox" />
         <span class="slider"></span>
@@ -70,7 +73,6 @@
           <button class="tab-btn" data-type="parabola">Парабола</button>
         </div>
 
-        <!-- ✔ ЕЛІПС -->
         <div id="ellipse-form" class="tab-content form-section active">
           <h3 class="form-title">Еліпс / Коло</h3>
           <div class="equation-preview">
@@ -89,7 +91,6 @@
           </div>
         </div>
 
-        <!-- ✔ ГІПЕРБОЛА -->
         <div id="hyperbola-form" class="tab-content form-section">
           <h3 class="form-title">Гіпербола</h3>
           <div class="equation-preview">
@@ -123,7 +124,6 @@
           </div>
         </div>
 
-        <!-- ✔ ПАРАБОЛА -->
         <div id="parabola-form" class="tab-content form-section">
           <h3 class="form-title">Парабола</h3>
           <div class="equation-preview">
@@ -151,7 +151,6 @@
           </div>
         </div>
 
-        <!-- Інтерактив -->
         <div>
           <h4 class="controls-group-title">Інтерактивні Режими</h4>
 
@@ -216,7 +215,6 @@
 
     </aside>
 
-    <!-- ПРАВА ПАНЕЛЬ -->
     <section class="right-panel">
 
       <div id="graphContainer" class="graph-container">
@@ -244,35 +242,56 @@
     <div>Команда Гіпермега • Криві другого порядку</div>
   </footer>
 
-  <!-- Скрипти -->
   <script src="scripts/solver.js"></script>
   <script src="scripts/graph.js"></script>
   <script src="scripts/locus_animation.js"></script>
   <script src="scripts/canonical.js"></script>
 
-  <!-- Музика -->
   <script>
     document.addEventListener('DOMContentLoaded', () => {
         const audio = document.getElementById('background-music');
-        if (audio) {
-            audio.volume = 0.05;
-            let playPromise = audio.play();
+        const musicBtn = document.getElementById('musicToggle');
+        
+        if (audio && musicBtn) {
+            audio.volume = 0.05; // Гучність 5%
+            let isPlaying = false;
 
+            // Функція оновлення стану (крутиться чи ні)
+            const updateState = (playing) => {
+                isPlaying = playing;
+                if (playing) {
+                    musicBtn.classList.add('playing'); // Починає крутитися
+                    musicBtn.style.filter = "none";    // Яскравий вигляд
+                } else {
+                    musicBtn.classList.remove('playing'); // Зупиняється
+                    musicBtn.style.filter = "grayscale(100%)"; // Сірий, коли вимкнено
+                }
+            };
+
+            // Обробка кліку
+            musicBtn.addEventListener('click', () => {
+                if (isPlaying) {
+                    audio.pause();
+                    updateState(false);
+                } else {
+                    audio.play().then(() => {
+                        updateState(true);
+                    }).catch(e => console.error("Помилка відтворення:", e));
+                }
+            });
+
+            // Спроба автозапуску
+            const playPromise = audio.play();
             if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    console.log("Автозапуск музики заблоковано. Очікуємо на клік...");
-                    const startAudioOnClick = () => {
-                        audio.play().catch(e => console.error("Не вдалося відтворити аудіо:", e));
-                        document.body.removeEventListener('click', startAudioOnClick);
-                        document.body.removeEventListener('touchstart', startAudioOnClick);
-                    };
-                    document.body.addEventListener('click', startAudioOnClick);
-                    document.body.addEventListener('touchstart', startAudioOnClick);
+                playPromise.then(() => {
+                    updateState(true);
+                }).catch(() => {
+                    updateState(false);
+                    console.log("Автозапуск заблоковано. Натисніть на диск.");
                 });
             }
         }
     });
   </script>
-
 </body>
 </html>

@@ -987,3 +987,58 @@ body.theme-light .theory-block[open] {
 body.theme-light .theory-content {
   border-top-color: rgba(0, 0, 0, 0.08);
 }
+/* --- КНОПКА МУЗИКИ --- */
+.music-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.3rem;
+  padding: 0 10px;
+  margin-right: 15px; /* Відступ від перемикача теми */
+  transition: transform 0.2s ease, opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.8;
+}
+
+/* --- БЛОК КОНТРОЛЕРІВ (вирівнювання) --- */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 15px; /* Відступ між музикою і темою */
+}
+
+/* --- КНОПКА МУЗИКИ (ПЛАТІВКА) --- */
+.music-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.8rem; /* Розмір іконки */
+  padding: 0;
+  line-height: 1;
+  transition: transform 0.2s ease, opacity 0.2s;
+  opacity: 0.7;
+  
+  /* Центрування іконки */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.music-btn:hover {
+  opacity: 1;
+  transform: scale(1.1); /* Легке збільшення при наведенні */
+}
+
+/* Анімація обертання, коли додано клас .playing */
+.music-btn.playing {
+  opacity: 1;
+  animation: spin 3s linear infinite; /* 3 секунди на повний оберт, безкінечно */
+}
+
+/* Ключові кадри для обертання */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
